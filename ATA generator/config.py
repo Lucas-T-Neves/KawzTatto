@@ -23,9 +23,9 @@ obj='Cada grupo tem como objetivo desejável definir 3 possíveis soluções'
 
 #DOC
 #onde salvar o doc
-pathSave = f"{pasta_atual}\{titulo}.docx"
+pathSave = pasta_atual / f"{titulo}.docx"
 #onde encontrar o template
-pathTemplate = f"{pasta_atual}\modelo.dotx"
+pathTemplate = pasta_atual / "modelo.dotx"
 
 #Formate
 textsBold = ["Presentes:", "Ausentes (se houver):", "Assunto:", "Próximos passos:", "Objetivo:"]

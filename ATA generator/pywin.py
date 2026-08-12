@@ -4,7 +4,7 @@ import sys
 import config
 
 openWord = win32com.client.Dispatch("Word.Application")
-doc = openWord.Documents.Add(Template=config.pathTemplate)
+doc = openWord.Documents.Add(Template=str(config.pathTemplate))
 
 
 class WordInstance:
@@ -53,7 +53,7 @@ class WordInstance:
     def save(self):
         section = doc.Sections(1)
         section.PageSetup.VerticalAlignment = win32com.client.constants.wdAlignVerticalCenter
-        doc.SaveAs2(config.pathSave, FileFormat=16)  # FileFormat=16 corresponds to .docx format
+        doc.SaveAs2(str(config.pathSave), FileFormat=16)  # FileFormat=16 corresponds to .docx format
         doc.Close()
         openWord.Quit()
 
