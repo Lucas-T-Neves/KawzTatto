@@ -1,0 +1,1566 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>APIs do Estudio - Arquitetura Interativa</title>
+<style>
+  :root{
+    --bg:#070b12; --bg2:#0b1220; --panel:#0d1526; --panel2:#101a30;
+    --line:#1c2a44; --line2:#26395e;
+    --txt:#dbeafe; --mut:#94a3b8; --dim:#8296ac;
+    --cyan:#22d3ee; --cyan2:#0ea5b7;
+    --green:#34d399; --amber:#fbbf24; --red:#ef4444; --violet:#a78bfa; --blue:#3b82f6; --orange:#f97316;
+    --mono:'JetBrains Mono','Cascadia Code','Consolas',ui-monospace,monospace;
+    --sans:'Segoe UI',system-ui,sans-serif;
+    --fs-body:15px; --fs-xs:13px; --fs-s:14px; --fs-m:15.5px; --fs-l:19px; --fs-kpi:34px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:var(--bg);color:var(--txt);font-family:var(--sans);font-size:var(--fs-body);
+    background-image:radial-gradient(ellipse 80% 50% at 50% -20%, rgba(34,211,238,.07), transparent),
+    linear-gradient(rgba(28,42,68,.25) 1px, transparent 1px),linear-gradient(90deg, rgba(28,42,68,.25) 1px, transparent 1px);
+    background-size:100% 100%,44px 44px,44px 44px}
+  header{position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+    padding:14px 22px;background:rgba(7,11,18,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+  .brand{font-family:var(--mono);font-size:var(--fs-l);letter-spacing:.12em;color:var(--cyan);white-space:nowrap}
+  .brand b{color:var(--txt);font-weight:600}
+  .hdr-sub{font-family:var(--mono);font-size:var(--fs-xs);color:var(--mut)}
+  #busca{margin-left:auto;background:var(--bg);border:1px solid var(--line2);border-radius:8px;
+    padding:9px 13px;color:var(--txt);font-family:var(--mono);font-size:var(--fs-s);width:min(340px,60vw)}
+  #busca:focus{outline:none;border-color:var(--cyan)}
+  nav{display:flex;gap:6px;flex-wrap:wrap;padding:12px 22px;border-bottom:1px solid var(--line);background:rgba(11,18,32,.6)}
+  nav button{font-family:var(--mono);font-size:var(--fs-s);letter-spacing:.06em;cursor:pointer;background:none;
+    border:1px solid transparent;color:var(--mut);padding:8px 15px;border-radius:8px;transition:all .15s}
+  nav button:hover{color:var(--txt);border-color:var(--line2)}
+  nav button.active{color:#04121a;background:linear-gradient(135deg,var(--cyan),var(--cyan2));font-weight:700}
+  main{max-width:1280px;margin:0 auto;padding:20px 22px 90px}
+  section.tab{display:none}
+  section.tab.active{display:block;animation:fadein .22s}
+  @keyframes fadein{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+  h2.sec{font-family:var(--mono);font-size:var(--fs-l);color:var(--cyan);letter-spacing:.1em;margin:6px 0 14px;text-transform:uppercase}
+  .panel{background:linear-gradient(180deg,var(--panel),var(--bg2));border:1px solid var(--line);border-radius:12px;margin-bottom:14px;overflow:hidden}
+  .panel-h{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line);background:rgba(7,11,18,.35)}
+  .panel-h h3{font-family:var(--mono);font-size:var(--fs-s);letter-spacing:.14em;color:var(--cyan);font-weight:600;text-transform:uppercase}
+  .panel-h .tag{font-family:var(--mono);font-size:var(--fs-xs);color:var(--dim);margin-left:auto}
+  .panel-b{padding:16px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  @media(max-width:1000px){.grid2,.grid3{grid-template-columns:1fr}}
+  table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:var(--fs-xs)}
+  th{font-size:12px;letter-spacing:.1em;color:var(--mut);text-align:left;font-weight:500;padding:8px 10px;border-bottom:1px solid var(--line2);text-transform:uppercase;white-space:nowrap}
+  td{padding:7px 10px;border-bottom:1px solid rgba(28,42,68,.5);white-space:nowrap;vertical-align:top}
+  tr:hover td{background:rgba(34,211,238,.04)}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .mut{color:var(--mut)} .dim{color:var(--dim)} .cy{color:var(--cyan)} .gr{color:var(--green)}
+  .am{color:var(--amber)} .rd{color:var(--red)} .vi{color:var(--violet)} .bl{color:var(--blue)} .og{color:var(--orange)}
+  .pill{font-family:var(--mono);font-size:12px;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block}
+  .pill.GET{color:#04121a;background:var(--green)} .pill.POST{color:#04121a;background:var(--cyan)}
+  .pill.PUT{color:#1a1503;background:var(--amber)} .pill.DELETE{color:#fff;background:var(--red)}
+  .pill.ok{color:#04121a;background:var(--green)} .pill.warn{color:#1a1503;background:var(--amber)} .pill.bad{color:#fff;background:var(--red)}
+  .pill.info{color:#fff;background:var(--blue)} .pill.neut{color:var(--txt);background:#334155}
+  .ep{background:linear-gradient(180deg,var(--panel),var(--bg2));border:1px solid var(--line);border-radius:11px;margin-bottom:10px;overflow:hidden}
+  .ep-h{display:flex;align-items:center;gap:12px;padding:12px 15px;cursor:pointer;user-select:none}
+  .ep-h:hover{background:rgba(34,211,238,.04)}
+  .ep-h .rota{font-family:var(--mono);font-size:var(--fs-s);color:var(--txt);font-weight:600}
+  .ep-h .desc{font-size:var(--fs-xs);color:var(--mut);margin-left:auto;text-align:right}
+  .ep-b{display:none;padding:0 16px 16px;border-top:1px solid var(--line)}
+  .ep.open .ep-b{display:block}
+  .kv{display:grid;grid-template-columns:150px 1fr;gap:5px 12px;font-family:var(--mono);font-size:var(--fs-xs);margin:12px 0}
+  .kv dt{color:var(--mut)} .kv dd{color:var(--txt);white-space:normal}
+  code{font-family:var(--mono);font-size:.92em;background:rgba(34,211,238,.09);border:1px solid rgba(34,211,238,.22);
+    color:#a5f3fc;padding:1px 6px;border-radius:5px;white-space:nowrap}
+  pre{font-family:var(--mono);font-size:var(--fs-xs);background:var(--bg);border:1px solid var(--line2);border-radius:8px;
+    padding:12px 14px;overflow-x:auto;color:#cbd5e1;line-height:1.55;white-space:pre}
+  .chips{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px}
+  .chip{font-family:var(--mono);font-size:12px;cursor:pointer;padding:5px 12px;border-radius:16px;
+    border:1px solid var(--line2);color:var(--mut);background:none;transition:all .15s}
+  .chip:hover{color:var(--txt)}
+  .chip.on{color:#04121a;background:var(--cyan);border-color:var(--cyan);font-weight:700}
+  .kpi{background:linear-gradient(180deg,var(--panel),var(--bg2));border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+  .kpi .lbl{font-family:var(--mono);font-size:12px;letter-spacing:.12em;color:var(--mut);text-transform:uppercase}
+  .kpi .val{font-family:var(--mono);font-size:var(--fs-kpi);font-weight:600;color:var(--cyan);margin-top:3px}
+  .kpi .sub{font-family:var(--mono);font-size:var(--fs-xs);color:var(--dim);margin-top:2px}
+  .check{display:flex;gap:10px;align-items:flex-start;font-size:var(--fs-s);padding:9px 11px;border-radius:8px;
+    border:1px solid var(--line);background:rgba(7,11,18,.4);margin-bottom:7px;cursor:pointer}
+  .check:hover{border-color:var(--line2)}
+  .check input{width:18px;height:18px;margin-top:2px;accent-color:var(--cyan);flex:0 0 auto}
+  .check.done{border-color:rgba(52,211,153,.4)}
+  .check.done span{color:var(--dim);text-decoration:line-through}
+  .team-h{display:flex;align-items:center;gap:10px;margin:18px 0 10px}
+  .team-badge{font-family:var(--mono);font-size:12px;font-weight:700;padding:4px 11px;border-radius:6px}
+  .aviso{font-family:var(--mono);font-size:var(--fs-xs);color:var(--amber);border:1px solid rgba(251,191,36,.4);
+    background:rgba(251,191,36,.07);border-radius:8px;padding:11px 14px;margin-bottom:14px;line-height:1.6}
+  .fluxo{width:100%;height:auto;display:block}
+  .hide{display:none!important}
+  .empty{font-family:var(--mono);font-size:var(--fs-s);color:var(--dim);padding:22px;text-align:center}
+  .term{border-bottom:1px dashed var(--cyan);cursor:help}
+  .term:hover{background:rgba(34,211,238,.14);border-radius:3px}
+  #dica{position:fixed;z-index:300;max-width:350px;background:#0b1220;border:1px solid var(--cyan);
+    border-radius:9px;padding:11px 13px;font-family:var(--mono);font-size:12.5px;line-height:1.65;
+    color:var(--txt);box-shadow:0 10px 34px rgba(0,0,0,.6);display:none;pointer-events:none}
+  #dica b{color:var(--cyan)}
+
+  /* ---------- micro-fluxo (hover = internals do componente) ---------- */
+  .fluxo-grid{display:grid;grid-template-columns:1fr 360px;gap:14px;align-items:start}
+  @media(max-width:1150px){.fluxo-grid{grid-template-columns:1fr}}
+  .fx{background:var(--bg);border:1px solid var(--line2);border-radius:11px;padding:14px 16px;font-family:var(--mono)}
+  .fx-nome{font-size:var(--fs-s);font-weight:700;color:var(--cyan);letter-spacing:.05em}
+  .fx-sub{font-size:11.5px;color:var(--dim);letter-spacing:.12em;text-transform:uppercase;margin:13px 0 7px}
+  .fx-boot{margin:0 0 4px 17px;font-size:var(--fs-xs);line-height:1.62;color:var(--txt)}
+  .fx-boot li{margin-bottom:6px}
+  .fx-ramos{display:flex;flex-direction:column;gap:5px}
+  .ramo{font-size:var(--fs-xs);color:var(--txt);padding:7px 10px;border-radius:7px;border:1px solid var(--line);
+    background:rgba(13,21,38,.75);cursor:pointer;transition:border-color .12s,background .12s}
+  .ramo:hover,.ramo.pin{border-color:var(--cyan);background:rgba(34,211,238,.12)}
+  .fx-ctx{margin-top:10px;font-size:var(--fs-xs);color:var(--mut);line-height:1.65;min-height:52px;
+    border-left:3px solid var(--cyan);padding-left:11px}
+  .fx-dica{font-size:var(--fs-xs);color:var(--dim);margin-bottom:10px;line-height:1.6}
+  svg .hot{cursor:pointer;transition:filter .15s}
+  svg .hot:hover{filter:brightness(1.45)}
+  svg rect.hot.sel{stroke:var(--cyan)!important;stroke-width:3!important}
+  .fx-mini{padding:0;border:0;background:none}
+  .fx-mini .fx-nome{display:none}
+  .fx-mini .fx-ctx{min-height:44px}
+  .fx-row td:first-child{border-bottom:1px dashed rgba(34,211,238,.45);cursor:help}
+  #fx-diagrama{position:sticky;top:120px}
+  footer{position:fixed;bottom:0;left:0;right:0;z-index:40;display:flex;align-items:center;gap:14px;
+    padding:9px 22px;background:rgba(7,11,18,.94);border-top:1px solid var(--line);backdrop-filter:blur(8px)}
+  .tkc{font-family:var(--mono);font-size:var(--fs-xs);color:var(--mut)}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="brand">◈ APIS <b>ARQUITETURA</b></div>
+    <div class="hdr-sub" id="hdr-sub">apis/ · Spring Boot 4.1.1 · Java 21 · 61 testes verdes</div>
+  </div>
+  <input id="busca" placeholder="buscar endpoint, campo, tecnologia..." autocomplete="off">
+</header>
+
+<nav id="nav">
+  <button class="active" data-tab="visao">▣ VISÃO GERAL</button>
+  <button data-tab="endpoints">◈ ENDPOINTS</button>
+  <button data-tab="entidades">▤ ENTIDADES &amp; DTOs</button>
+  <button data-tab="credenciais">🔐 CREDENCIAIS</button>
+  <button data-tab="tecnologias">⚙ TECNOLOGIAS</button>
+  <button data-tab="plano">✓ PLANO DE AÇÃO</button>
+</nav>
+
+<main>
+
+<!-- ============ VISÃO GERAL ============ -->
+<section class="tab active" id="tab-visao">
+  <div class="grid3" style="margin-bottom:14px">
+    <div class="kpi"><div class="lbl">Endpoints REST</div><div class="val">12</div><div class="sub">3 domínios: contratos, imagens, agenda</div></div>
+    <div class="kpi"><div class="lbl">Integrações externas</div><div class="val">3</div><div class="sub">APITemplate · Cloudinary · Nylas</div></div>
+    <div class="kpi"><div class="lbl">Entidades persistidas</div><div class="val">2</div><div class="sub">contratos · imagens (H2 em memória)</div></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-h"><h3>▤ O que o sistema faz</h3><span class="tag">visão para os times</span></div>
+    <div class="panel-b" style="font-size:var(--fs-s);line-height:1.75;color:var(--txt)">
+      Backend único que centraliza <b>três integrações externas</b> atrás de endpoints REST próprios.
+      O cliente da API só conversa com o padrão interno (DTOs, ISO 8601, erros RFC 7807) — nunca com o
+      formato específico do provedor. Cada provedor tem um <code>client</code> próprio e o formato dele
+      não vaza para o domínio.
+      <div style="margin-top:10px" class="mut">
+        <b class="cy">Contratos:</b> gera o PDF do contrato no APITemplate.io e guarda o link. &nbsp;·&nbsp;
+        <b class="cy">Imagens:</b> sobe a imagem uma vez no Cloudinary e devolve versões editadas por transformação na URL (sem novo upload). &nbsp;·&nbsp;
+        <b class="cy">Agenda:</b> CRUD de eventos no Nylas v3 — a agenda é a fonte da verdade (não há tabela própria).
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-h"><h3>▤ Fluxo de dados</h3><span class="tag">requisição até o provedor</span></div>
+    <div class="panel-b">
+      <div class="fluxo-grid">
+        <svg class="fluxo" viewBox="0 0 980 300" xmlns="http://www.w3.org/2000/svg" font-family="monospace">
+        <defs>
+          <marker id="ar" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+            <path d="M0,0 L9,4.5 L0,9 z" fill="#22d3ee"/>
+          </marker>
+        </defs>
+        <style>
+          .bx{fill:#0d1526;stroke:#26395e;stroke-width:1.5;rx:9}
+          .bxt{fill:#dbeafe;font-size:13px;font-weight:600}
+          .bxs{fill:#94a3b8;font-size:10.5px}
+          .lb{fill:#94a3b8;font-size:10px}
+          .ext{fill:#101a30;stroke:#f97316;stroke-width:1.5}
+          .extt{fill:#fdba74;font-size:12px;font-weight:600}
+          .ln{stroke:#22d3ee;stroke-width:1.8;fill:none;marker-end:url(#ar)}
+          .ln2{stroke:#f97316;stroke-width:1.6;fill:none;marker-end:url(#ar);stroke-dasharray:5 3}
+        </style>
+        <!-- cliente -->
+        <rect class="bx hot" data-comp="cliente" x="20" y="120" width="150" height="60"/>
+        <text class="bxt" x="95" y="145" text-anchor="middle">Cliente HTTP</text>
+        <text class="bxs" x="95" y="163" text-anchor="middle">front / integrador</text>
+        <!-- controller -->
+        <rect class="bx hot" data-comp="controller" x="230" y="120" width="160" height="60"/>
+        <text class="bxt" x="310" y="145" text-anchor="middle">Controller</text>
+        <text class="bxs" x="310" y="163" text-anchor="middle">só DTO, nunca entity</text>
+        <!-- service -->
+        <rect class="bx hot" data-comp="service" x="450" y="120" width="160" height="60"/>
+        <text class="bxt" x="530" y="145" text-anchor="middle">Service</text>
+        <text class="bxs" x="530" y="163" text-anchor="middle">regra + transação</text>
+        <!-- repositório / H2 -->
+        <rect class="bx hot" data-comp="repositorio" x="700" y="30" width="250" height="70"/>
+        <text class="bxt" x="825" y="55" text-anchor="middle">Repository (JPA)</text>
+        <text class="bxs" x="825" y="74" text-anchor="middle">contratos · imagens · H2 em memória</text>
+        <!-- clientes externos -->
+        <rect class="ext hot" data-comp="apitemplate" x="700" y="150" width="250" height="55"/>
+        <text class="extt" x="825" y="173" text-anchor="middle">ApiTemplateClient</text>
+        <text class="bxs" x="825" y="192" text-anchor="middle">POST /create-pdf (3s / 30s)</text>
+        <rect class="ext hot" data-comp="cloudinary" x="700" y="215" width="250" height="55"/>
+        <text class="extt" x="825" y="238" text-anchor="middle">CloudinaryClient</text>
+        <text class="bxs" x="825" y="257" text-anchor="middle">upload / delete (3s / 15s)</text>
+        <rect class="ext hot" data-comp="nylas" x="450" y="215" width="250" height="55"/>
+        <text class="extt" x="575" y="238" text-anchor="middle">NylasClient</text>
+        <text class="bxs" x="575" y="257" text-anchor="middle">events v3 (3s / 15s)</text>
+        <!-- setas -->
+        <path class="ln" d="M170,150 L228,150"/>
+        <path class="ln" d="M390,150 L448,150"/>
+        <path class="ln" d="M610,140 C660,140 660,65 698,65"/>
+        <path class="ln2" d="M610,160 C660,160 660,178 698,178"/>
+        <path class="ln2" d="M530,180 L530,213"/>
+        <!-- rótulos -->
+        <text class="lb" x="199" y="140" text-anchor="middle">JSON</text>
+        <text class="lb" x="419" y="140" text-anchor="middle">DTO</text>
+        <text class="lb" x="655" y="95" text-anchor="middle">fora da transação</text>
+        <text class="lb" x="655" y="200" text-anchor="middle">HTTP</text>
+      </svg>
+        <div class="fx" id="fx-diagrama"></div>
+      </div>
+      <div class="mut" style="font-size:var(--fs-xs);font-family:var(--mono);margin-top:10px;line-height:1.7">
+        Regra de ouro: <b class="cy">nenhuma transação de banco aberta durante chamada HTTP</b> — o serviço salva
+        <code>PENDENTE</code>, chama o provedor fora da transação e depois salva <code>GERADO</code>/<code>FALHA</code>.
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-h"><h3>▤ Arquitetura em camadas</h3><span class="tag">contratos do código</span></div>
+    <div class="panel-b">
+      <table>
+        <tr><th>Camada</th><th>Papel</th><th>Regra que o código segue</th></tr>
+        <tr><td class="cy">Controller</td><td>HTTP entra/sai</td><td>entity nunca aparece em assinatura — entra e sai DTO</td></tr>
+        <tr><td class="cy">Service</td><td>regra de negócio</td><td>chamada ao provedor <b>fora</b> de transação; salva PENDENTE antes</td></tr>
+        <tr><td class="cy">Repository</td><td>banco</td><td>Spring Data JPA; H2 em memória no dev</td></tr>
+        <tr><td class="cy">Client (integration)</td><td>provedor externo</td><td>DTO do provedor não vaza; <code>traduzir()</code> isola o formato</td></tr>
+        <tr><td class="cy">Config</td><td>beans/timeouts</td><td>chaves só via <code>@ConfigurationProperties</code>; nunca no código</td></tr>
+        <tr><td class="cy">Exception</td><td>erros</td><td>RFC 7807 via ProblemDetail — o GlobalExceptionHandler traduz a exceção; status cru do provedor nunca repassado ao cliente</td></tr>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ENDPOINTS ============ -->
+<section class="tab" id="tab-endpoints">
+  <div class="chips" id="filtros">
+    <button class="chip on" data-f="todos">TODOS</button>
+    <button class="chip" data-f="GET">GET</button>
+    <button class="chip" data-f="POST">POST</button>
+    <button class="chip" data-f="PUT">PUT</button>
+    <button class="chip" data-f="DELETE">DELETE</button>
+    <button class="chip" data-f="contratos">contratos</button>
+    <button class="chip" data-f="imagens">imagens</button>
+    <button class="chip" data-f="agenda">agenda</button>
+  </div>
+  <div id="lista-endpoints"></div>
+</section>
+
+<!-- ============ ENTIDADES ============ -->
+<section class="tab" id="tab-entidades">
+  <div class="aviso">Entity <b>nunca</b> aparece em assinatura de controller: entra e sai sempre como DTO (record). Abaixo, o que o banco guarda e o que a API expõe.</div>
+
+  <div class="panel">
+    <div class="panel-h"><h3>▤ Contrato</h3><span class="tag">tabela contratos · JPA/Hibernate</span></div>
+    <div class="panel-b">
+      <table>
+        <tr><th>Campo</th><th>Tipo Java</th><th>Coluna</th><th>Observação</th></tr>
+        <tr><td class="cy">id</td><td>Long</td><td>PK GeneratedValue identity</td><td>gerado pelo banco</td></tr>
+        <tr><td class="cy">nomeCliente</td><td>String</td><td>not null · 100</td><td>3–100 caracteres</td></tr>
+        <tr><td class="cy">cpfCliente</td><td>String</td><td>not null · 14</td><td>validado por algoritmo (@CPF), com ou sem máscara</td></tr>
+        <tr><td class="cy">telefoneCliente</td><td>String</td><td>not null · 20</td><td>8–20 chars, dígitos e +() -</td></tr>
+        <tr><td class="cy">nomeArtista</td><td>String</td><td>not null · 150</td><td></td></tr>
+        <tr><td class="cy">descricaoTatuagem</td><td>String</td><td>not null · 1000</td><td></td></tr>
+        <tr><td class="cy">localCorpo</td><td>String</td><td>not null · 100</td><td></td></tr>
+        <tr><td class="cy">tamanhoEstimado</td><td>String</td><td>not null · 20</td><td class="am">texto livre hoje — fechar lista (plano backend)</td></tr>
+        <tr><td class="cy">dataInicio / dataFim</td><td>LocalDate</td><td>not null</td><td>fim não pode ser antes do início</td></tr>
+        <tr><td class="cy">valorOrcado</td><td>BigDecimal</td><td>not null · 12,2</td><td>maior que zero</td></tr>
+        <tr><td class="cy">sinalPago</td><td>boolean</td><td>not null</td><td></td></tr>
+        <tr><td class="cy">formaPagamento</td><td>String</td><td>not null · 60</td><td class="am">texto livre hoje — fechar lista (plano backend)</td></tr>
+        <tr><td class="cy">status</td><td>enum StatusContrato</td><td>not null · 20</td><td>PENDENTE → GERADO / FALHA</td></tr>
+        <tr><td class="cy">pdfUrl</td><td>String</td><td>1000</td><td>link do APITemplate</td></tr>
+        <tr><td class="cy">transactionRef</td><td>String</td><td>100</td><td>referência do provedor</td></tr>
+        <tr><td class="cy">criadoEm</td><td>OffsetDateTime</td><td>not null</td><td>auditoria</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-h"><h3>▤ Imagem</h3><span class="tag">tabela imagens</span></div>
+    <div class="panel-b">
+      <table>
+        <tr><th>Campo</th><th>Tipo Java</th><th>Coluna</th><th>Observação</th></tr>
+        <tr><td class="cy">id</td><td>Long</td><td>PK identity</td><td>gerado</td></tr>
+        <tr><td class="cy">publicId</td><td>String</td><td>not null · único · 255</td><td>id no Cloudinary</td></tr>
+        <tr><td class="cy">url</td><td>String</td><td>not null · 1000</td><td>URL original</td></tr>
+        <tr><td class="cy">formato</td><td>String</td><td>not null · 20</td><td>jpg/png/webp (validado por magic bytes)</td></tr>
+        <tr><td class="cy">bytes</td><td>Long</td><td>not null</td><td>limite 10 MB na entrada</td></tr>
+        <tr><td class="cy">largura / altura</td><td>Integer</td><td>nullable</td><td>metadados do provedor</td></tr>
+        <tr><td class="cy">criadoEm</td><td>OffsetDateTime</td><td>not null</td><td>auditoria</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-h"><h3>▤ DTOs expostos</h3><span class="tag">records — o que trafega</span></div>
+    <div class="panel-b">
+      <table>
+        <tr><th>DTO</th><th>Campos</th><th>Usado em</th></tr>
+        <tr><td class="vi">ContratoRequestDTO</td><td class="mut">nomeCliente, cpfCliente, telefoneCliente, nomeArtista, descricaoTatuagem, localCorpo, tamanhoEstimado, dataInicio, dataFim, valorOrcado, sinalPago, formaPagamento</td><td>POST /contratos</td></tr>
+        <tr><td class="vi">ContratoResponseDTO</td><td class="mut">id, nomeCliente, status, pdfUrl, criadoEm</td><td>respostas de contrato</td></tr>
+        <tr><td class="vi">ImagemResponseDTO</td><td class="mut">id, publicId, url, formato, bytes, largura, altura, criadoEm</td><td>respostas de imagem</td></tr>
+        <tr><td class="vi">ImagemUrlDTO</td><td class="mut">url (transformada)</td><td>GET /imagens/{id}/url</td></tr>
+        <tr><td class="vi">TransformacaoParams</td><td class="mut">largura, altura, corte, qualidade, formato, efeito (listas fechadas)</td><td>query do /url</td></tr>
+        <tr><td class="vi">EventoRequestDTO</td><td class="mut">titulo, inicio, fim, fusoHorario, descricao, local, participantes[{nome, email}]</td><td>POST/PUT /agenda/eventos</td></tr>
+        <tr><td class="vi">EventoResponseDTO</td><td class="mut">id, titulo, inicio, fim, status, local, descricao, participantes</td><td>respostas da agenda</td></tr>
+      </table>
+      <div class="mut" style="font-family:var(--mono);font-size:var(--fs-xs);margin-top:12px;line-height:1.7">
+        DTOs de provedor (Nylas*, ApiTemplate*, Cloudinary*) existem só dentro de <code>integration/</code> e são
+        convertidos por <code>traduzir()</code> — o formato externo não vaza.
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-h"><h3>▤ Micro-fluxo do campo</h3><span class="tag">passe o mouse numa linha das tabelas acima</span></div>
+    <div class="panel-b">
+      <div class="fx-dica">Cada campo tem história: quando nasce, quem escreve nele e o que pode dar errado. As linhas com sublinhado ciano respondem ao mouse.</div>
+      <div class="fx" id="fx-campo"></div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- ============ CREDENCIAIS ============ -->
+<section class="tab" id="tab-credenciais">
+  <div class="aviso">Este documento <b>não contém valores de segredo</b> — só nomes, onde vivem e estado. Os arquivos com valores reais (<code>apis/.env</code>, <code>apis/src/main/resources/application-local.properties</code>) nunca são versionados.</div>
+  <div id="lista-credenciais"></div>
+
+  <div class="panel">
+    <div class="panel-h"><h3>▤ Micro-fluxo da credencial</h3><span class="tag">passe o mouse numa linha</span></div>
+    <div class="panel-b">
+      <div class="fx-dica">Onde a credencial é lida, quando sai da gaveta e o que acontece se faltar.</div>
+      <div class="fx" id="fx-cred"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ TECNOLOGIAS ============ -->
+<section class="tab" id="tab-tecnologias">
+  <div class="panel">
+    <div class="panel-h"><h3>▤ Stack e versões</h3><span class="tag">fonte: pom.xml + application.properties</span></div>
+    <div class="panel-b">
+      <table id="tb-tec">
+        <tr><th>Tecnologia</th><th>Versão</th><th>Tipo</th><th>Para que serve no projeto</th></tr>
+        <tr data-busca="spring boot framework parent"><td class="cy">Spring Boot</td><td class="am">4.1.1</td><td>framework (parent POM)</td><td>base do build, autoconfiguração, servidor embutido</td></tr>
+        <tr data-busca="java linguagem jdk"><td class="cy">Java</td><td class="am">21</td><td>linguagem</td><td>compilação e runtime</td></tr>
+        <tr data-busca="maven build surefire teste"><td class="cy">Maven</td><td class="am">wrapper</td><td>build</td><td>surefire enxuto: fork isolado por classe, <code>-Xmx384m</code> (máquina com pouca RAM)</td></tr>
+        <tr data-busca="spring webmvc rest controllers"><td class="cy">Spring Web MVC</td><td class="am">gerenciado pelo Boot</td><td>web</td><td>controllers REST e serialização JSON</td></tr>
+        <tr data-busca="spring data jpa hibernate persistencia"><td class="cy">Spring Data JPA + Hibernate</td><td class="am">gerenciado</td><td>persistência</td><td>entities, repositórios, <code>ddl-auto=create-drop</code> no dev</td></tr>
+        <tr data-busca="bean validation jakarta"><td class="cy">Bean Validation</td><td class="am">gerenciado</td><td>validação</td><td>@NotBlank, @CPF, @AssertTrue (período), @Digits...</td></tr>
+        <tr data-busca="restclient http client"><td class="cy">Spring RestClient</td><td class="am">gerenciado</td><td>HTTP</td><td>clientes dos 3 provedores, com timeouts de conexão/leitura</td></tr>
+        <tr data-busca="h2 database banco memoria jpa open-in-view"><td class="cy">H2 Database</td><td class="am">gerenciado (runtime)</td><td>banco</td><td>banco em memória (<code>jdbc:h2:mem:apisdb</code>) — <b>some ao restart</b>; open-in-view=false evita query na renderização</td></tr>
+        <tr data-busca="cloudinary sdk imagens upload"><td class="cy">Cloudinary SDK (cloudinary-http5)</td><td class="am">2.5.0</td><td>cliente</td><td>upload, delete e transformação por URL (timeout único: 15s)</td></tr>
+        <tr data-busca="springdoc openapi swagger documentacao"><td class="cy">SpringDoc OpenAPI</td><td class="am">3.1.0</td><td>documentação</td><td>Swagger/OpenAPI — <b>desligado por padrão</b>, só no perfil local</td></tr>
+        <tr data-busca="lombok boilerplate"><td class="cy">Lombok</td><td class="am">gerenciado</td><td>produtividade</td><td>@Getter/@Setter nas entities</td></tr>
+        <tr data-busca="testes junit mockito mockrestserviceserver webmvctest"><td class="cy">JUnit + Mockito + MockRestServiceServer</td><td class="am">gerenciado (test)</td><td>testes</td><td><b>61 testes verdes</b>, nenhuma chamada às APIs reais. Services usam Mockito; controllers sobem com @WebMvcTest</td></tr>
+        <tr data-busca="apitemplate pdf externo"><td class="cy">APITemplate.io API</td><td class="am">v2 (externa)</td><td>serviço</td><td>gera o PDF do contrato; devolve link de download</td></tr>
+        <tr data-busca="nylas agenda calendario externo"><td class="cy">Nylas API</td><td class="am">v3 (externa)</td><td>serviço</td><td>agenda: listar/criar/atualizar/apagar eventos (fonte da verdade)</td></tr>
+        <tr data-busca="cloudinary api imagens externo"><td class="cy">Cloudinary API</td><td class="am">externa</td><td>serviço</td><td>armazenamento e edição de imagens por URL</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="panel">
+      <div class="panel-h"><h3>▤ Perfis de execução</h3><span class="tag">application.properties + local</span></div>
+      <div class="panel-b">
+        <table>
+          <tr><th>Perfil</th><th>H2 console</th><th>Swagger</th><th>Headers de segurança</th></tr>
+          <tr><td class="cy">padrão (produção)</td><td><span class="pill bad">404</span></td><td><span class="pill bad">404</span></td><td><span class="pill ok">presentes</span></td></tr>
+          <tr><td class="cy">local (dev)</td><td><span class="pill ok">200</span></td><td><span class="pill ok">200</span></td><td><span class="pill ok">presentes</span></td></tr>
+        </table>
+        <div class="mut" style="font-family:var(--mono);font-size:var(--fs-xs);margin-top:12px;line-height:1.7">
+          Flags: <code>H2_CONSOLE_ENABLED</code> e <code>SPRINGDOC_ENABLED</code> (padrão <code>false</code>).
+          Em produção as duas superfícies de debug respondem 404 — comprovado ao vivo.
+        </div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-h"><h3>▤ Timeouts dos clientes</h3><span class="tag">fixos no properties</span></div>
+      <div class="panel-b">
+        <table>
+          <tr><th>Cliente</th><th class="num">Conexão</th><th class="num">Leitura</th></tr>
+          <tr><td class="cy">APITemplate.io</td><td class="num">3 s</td><td class="num">30 s</td></tr>
+          <tr><td class="cy">Nylas</td><td class="num">3 s</td><td class="num">15 s</td></tr>
+          <tr><td class="cy">Cloudinary</td><td class="num mut" colspan="2">único: 15 s (limitação do SDK)</td></tr>
+        </table>
+        <div class="mut" style="font-family:var(--mono);font-size:var(--fs-xs);margin-top:12px;line-height:1.7">
+          Conexão lenta no Cloudinary demora 15 s para falhar — hoje conexão e leitura compartilham o mesmo valor.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-h"><h3>▤ Micro-fluxo da tecnologia</h3><span class="tag">passe o mouse numa linha da tabela</span></div>
+    <div class="panel-b">
+      <div class="fx-dica">O que cada tecnologia faz no boot, quando é instanciada e quais são seus caminhos.</div>
+      <div class="fx" id="fx-tec"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PLANO DE AÇÃO ============ -->
+<section class="tab" id="tab-plano">
+  <div class="aviso">Checklist derivada das pendências reais do código. Marque conforme for executando — fica salvo neste navegador (localStorage).</div>
+  <div id="plano-times"></div>
+</section>
+
+<footer>
+  <span class="tkc">◈ documento gerado a partir do código-fonte de apis/ · sem valores de segredo · use a busca para filtrar</span>
+</footer>
+
+<script>
+'use strict';
+/* ================= dados: endpoints ================= */
+const EPS = [
+  {m:'POST', rota:'/contratos', dom:'contratos', st:'201 + Location',
+   desc:'cria contrato, gera o PDF e devolve o link',
+   req:'JSON ContratoRequestDTO (13 campos: nomeCliente, cpfCliente, telefoneCliente, nomeArtista, descricaoTatuagem, localCorpo, tamanhoEstimado, dataInicio, dataFim, valorOrcado, sinalPago, formaPagamento)',
+   resp:'ContratoResponseDTO { id, nomeCliente, status, pdfUrl, criadoEm }',
+   erros:['400 campo inválido (mensagem por campo)','400 dataFim anterior a dataInicio','502 falha na integração APITemplate','504 timeout do provedor','503 limite de requisições (429) + Retry-After'],
+   notas:'Fluxo: salva PENDENTE -> chama o APITemplate FORA de transação -> salva GERADO (com pdfUrl/transactionRef) ou FALHA. O CPF é validado por algoritmo, com ou sem máscara.'},
+
+  {m:'GET', rota:'/contratos', dom:'contratos', st:'200',
+   desc:'lista contratos (mais recentes primeiro)',
+   req:'—',
+   resp:'ContratoResponseDTO[]',
+   erros:[],
+   notas:'Dados somem ao restart enquanto o banco for H2 em memória (pendência do time de banco).'},
+
+  {m:'GET', rota:'/contratos/{id}', dom:'contratos', st:'200',
+   desc:'busca um contrato',
+   req:'path: id',
+   resp:'ContratoResponseDTO',
+   erros:['404 contrato inexistente'],
+   notas:''},
+
+  {m:'POST', rota:'/imagens', dom:'imagens', st:'201',
+   desc:'upload de imagem (uma vez) e devolve os metadados',
+   req:'multipart/form-data: campo "arquivo" + "pasta" (opcional)',
+   resp:'ImagemResponseDTO { id, publicId, url, formato, bytes, largura, altura, criadoEm }',
+   erros:['400 arquivo vazio, maior que 10 MB ou que não é JPEG/PNG/WebP (validado pelo CONTEÚDO - magic bytes, não pela extensão)','502 falha no Cloudinary','504 timeout'],
+   notas:'A validação por conteúdo foi a correção #1 de 09/10: antes, arquivo inválido virava 502.'},
+
+  {m:'GET', rota:'/imagens', dom:'imagens', st:'200',
+   desc:'lista as imagens',
+   req:'—',
+   resp:'ImagemResponseDTO[]',
+   erros:[],
+   notas:''},
+
+  {m:'GET', rota:'/imagens/{id}', dom:'imagens', st:'200',
+   desc:'detalhe com a URL original',
+   req:'path: id',
+   resp:'ImagemResponseDTO',
+   erros:['404 imagem inexistente'],
+   notas:''},
+
+  {m:'GET', rota:'/imagens/{id}/url', dom:'imagens', st:'200',
+   desc:'URL transformada SEM novo upload',
+   req:'query (todos opcionais): largura|altura (auto|1-10000), corte (fill|fit|crop|scale), qualidade (auto|1-100), formato (auto|webp|jpg|png), efeito (grayscale|sepia|blur)',
+   resp:'ImagemUrlDTO { url }',
+   erros:['400 parâmetro fora da lista fechada','404 imagem inexistente'],
+   notas:'Transformações são restritas a listas fechadas para não montar URL arbitrária a partir da entrada.'},
+
+  {m:'DELETE', rota:'/imagens/{id}', dom:'imagens', st:'204',
+   desc:'remove no Cloudinary e no banco',
+   req:'path: id',
+   resp:'—',
+   erros:['404 imagem inexistente','502 falha ao remover no provedor'],
+   notas:''},
+
+  {m:'GET', rota:'/agenda/eventos', dom:'agenda', st:'200',
+   desc:'lista eventos no intervalo',
+   req:'query: inicio, fim (ISO 8601, ambos opcionais)',
+   resp:'EventoResponseDTO[]',
+   erros:['400 fim anterior/igual a inicio'],
+   notas:'Nylas devolve até 50 eventos por requisição, ordenados pelo início; a listagem filha por start/end mas NÃO pagina além disso (pendência backend).'},
+
+  {m:'POST', rota:'/agenda/eventos', dom:'agenda', st:'201',
+   desc:'cria evento',
+   req:'JSON: titulo, inicio, fim, fusoHorario (opcional, padrão America/Sao_Paulo), descricao, local, participantes[{nome, email}]',
+   resp:'EventoResponseDTO',
+   erros:['400 campo inválido','400 fim não depois de inicio','502 falha no Nylas','504 timeout'],
+   notas:'Só eventos com hora definida (timespan) — dia inteiro (datespan) não é suportado.'},
+
+  {m:'PUT', rota:'/agenda/eventos/{id}', dom:'agenda', st:'200',
+   desc:'atualiza evento (corpo completo)',
+   req:'path: id + JSON igual ao POST',
+   resp:'EventoResponseDTO',
+   erros:['404 evento inexistente no Nylas','400 período inválido','502 falha'],
+   notas:'Correção #6: enviar lista VAZIA de participantes zera os participantes (antes o null era lido como "não alterar").'},
+
+  {m:'DELETE', rota:'/agenda/eventos/{id}', dom:'agenda', st:'204',
+   desc:'apaga evento',
+   req:'path: id',
+   resp:'—',
+   erros:['404 evento inexistente','502 falha'],
+   notas:'404 na listagem/criação indica grant/calendário inválido e é tratado como 502 — só em evento específico vira 404.'}
+];
+
+const ERROS_GERAIS = [
+  ['400','campo inválido — errors:[{campo, mensagem}]'],
+  ['400','período inválido (dataFim < dataInicio; fim <= inicio no evento ou na listagem)'],
+  ['400','arquivo vazio, > 10 MB ou não JPEG/PNG/WebP (validado pelo conteúdo)'],
+  ['400','parâmetro de transformação fora da lista'],
+  ['404','recurso inexistente no banco (contrato, imagem)'],
+  ['404','evento inexistente no Nylas (PUT/DELETE)'],
+  ['502','falha de integração com o provedor'],
+  ['504','timeout do provedor'],
+  ['503','limite de requisições do provedor (429) + Retry-After'],
+  ['500','erro inesperado']
+];
+
+/* ================= dados: credenciais (sem valores) ================= */
+const CREDS = [
+  {api:'APITemplate.io', icone:'📄', itens:[
+    {n:'APITEMPLATE_API_KEY', tipo:'chave de API', onde:'apis/.env · application-local.properties', env:'APITEMPLATE_API_KEY', status:'ROTACIONAR'},
+    {n:'APITEMPLATE_TEMPLATE_ID', tipo:'id do template do contrato', onde:'apis/.env · application-local.properties', env:'APITEMPLATE_TEMPLATE_ID', status:'OK (configurado)'}
+  ], nota:'Chave exposta em conversa durante a implementação — gerar nova no painel e atualizar os dois arquivos. O template é o "New Template" (PDF) da conta.'},
+  {api:'Cloudinary', icone:'🖼', itens:[
+    {n:'CLOUDINARY_CLOUD_NAME', tipo:'nome da cloud', onde:'apis/.env · application-local.properties', env:'CLOUDINARY_CLOUD_NAME', status:'ROTACIONAR'},
+    {n:'CLOUDINARY_API_KEY', tipo:'chave', onde:'apis/.env · application-local.properties', env:'CLOUDINARY_API_KEY', status:'ROTACIONAR'},
+    {n:'CLOUDINARY_API_SECRET', tipo:'segredo', onde:'apis/.env · application-local.properties', env:'CLOUDINARY_API_SECRET', status:'ROTACIONAR'}
+  ], nota:'Alternativa: CLOUDINARY_URL no formato cloudinary://key:secret@cloud. O upload real de imagem foi testado ao vivo (201).'},
+  {api:'Nylas', icone:'📅', itens:[
+    {n:'NYLAS_API_KEY', tipo:'chave de API', onde:'apis/.env · application-local.properties', env:'NYLAS_API_KEY', status:'ROTACIONAR'},
+    {n:'NYLAS_GRANT_ID', tipo:'grant da agenda do estúdio', onde:'apis/.env · application-local.properties', env:'NYLAS_GRANT_ID', status:'ROTACIONAR'},
+    {n:'NYLAS_CALENDAR_ID', tipo:'calendário (padrão: primary)', onde:'apis/.env · application-local.properties', env:'NYLAS_CALENDAR_ID', status:'OK'}
+  ], nota:'CRUD completo testado ao vivo (criar 201, atualizar 200, apagar 204). Região US/EU definida por NYLAS_BASE_URL.'},
+  {api:'Negócio (estúdio)', icone:'🏷', itens:[
+    {n:'ESTUDIO_NOME', tipo:'nome injetado no PDF', onde:'apis/.env · application-local.properties', env:'ESTUDIO_NOME', status:'CONFIRMAR'},
+    {n:'ESTUDIO_DOCUMENTO', tipo:'documento injetado no PDF', onde:'apis/.env · application-local.properties', env:'ESTUDIO_DOCUMENTO', status:'CONFIRMAR'}
+  ], nota:'Hoje com valores do exemplo do template ("Kawz Tatto") — o dono precisa informar os oficiais.'},
+  {api:'Desenvolvimento (não são segredos)', icone:'🔧', itens:[
+    {n:'H2_CONSOLE_ENABLED', tipo:'flag do console do banco', onde:'application.properties (padrão false)', env:'H2_CONSOLE_ENABLED', status:'OK'},
+    {n:'SPRINGDOC_ENABLED', tipo:'flag do Swagger/OpenAPI', onde:'application.properties (padrão false)', env:'SPRINGDOC_ENABLED', status:'OK'},
+    {n:'H2 (usuário sa / senha vazia)', tipo:'banco em memória do dev', onde:'application.properties', env:'—', status:'OK'}
+  ], nota:'Desligados por padrão em produção; ligados só no perfil local.'}
+];
+
+/* ================= dados: plano de ação ================= */
+const TIMES = [
+  {time:'BANCO DE DADOS', cor:'var(--blue)', itens:[
+    'Migrar H2 (memória) para PostgreSQL real — a máquina já tem o 5432 endurecido (bind 127.0.0.1)',
+    'Definir estratégia de schema: hoje ddl-auto=create-drop; adotar Flyway/Liquibase + validate',
+    'Garantir persistência após restart (contratos e imagens desaparecem hoje)',
+    'LGPD: CPF e telefone são dados pessoais — definir retenção, cifra em repouso e controle de acesso',
+    'Backup agendado do Postgres (pg_dump) quando migrar',
+    'Índices: contratos.criadoEm (listagem ordena por ele) — imagens.publicId já é único'
+  ]},
+  {time:'BACKEND', cor:'var(--cyan)', itens:[
+    'Rotacionar as 3 chaves expostas em conversa (APITemplate, Cloudinary, Nylas)',
+    'Spring Security: autenticação/autorização nos endpoints (hoje abertos)',
+    'Fechar listas de tamanhoEstimado e formaPagamento (hoje texto livre)',
+    'Paginação da agenda (Nylas devolve no máximo 50 por página)',
+    'Suporte a eventos de dia inteiro (datespan) — hoje só timespan',
+    'Confirmar ESTUDIO_NOME/ESTUDIO_DOCUMENTO oficiais (hoje valor do exemplo)',
+    'Confirmar validade do download_url do APITemplate (evidência: PDFs de ~2h seguem acessíveis; risco residual se a permanência for crítica)'
+  ]},
+  {time:'INFRAESTRUTURA', cor:'var(--green)', itens:[
+    'Variáveis de ambiente fora do perfil local — produção não pode depender de arquivo com segredo',
+    'TLS no ingress/reverse proxy antes de publicar (hoje HTTP puro em 8080/8081)',
+    'Manter Swagger e console H2 desligados em produção (flags já implementadas)',
+    'SecurityHeadersFilter ativo nas respostas (já implementado: X-Content-Type-Options, X-Frame-Options, CSP, Referrer-Policy, Permissions-Policy, HSTS) e validar no ingress',
+    'Health check / actuator para monitoramento',
+    'CI rodando as suítes (96 testes verdes: 61 apis + 35 sentinela)',
+    'Futuro: secret manager para as chaves (em vez de arquivo local)',
+    'Decidir destino do uTorrent Web (6881) — única exposição restante da máquina, é app do usuário'
+  ]}
+];
+
+/* ================= utilidades ================= */
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* ================= endpoints ================= */
+function pill(m){ return '<span class="pill ' + m + '">' + m + '</span>'; }
+function renderEndpoints(){
+  const html = EPS.map((e, i) =>
+    '<div class="ep" data-m="' + e.m + '" data-dom="' + e.dom + '" data-busca="' + esc((e.rota + ' ' + e.dom + ' ' + e.desc + ' ' + (e.notas||'')).toLowerCase()) + '">' +
+      '<div class="ep-h" onclick="toggleEp(' + i + ')">' + pill(e.m) +
+        '<span class="rota">' + esc(e.rota) + '</span>' +
+        '<span class="desc">' + esc(e.desc) + '</span></div>' +
+      '<div class="ep-b">' +
+        '<dl class="kv">' +
+          '<dt>sucesso</dt><dd class="gr">' + esc(e.st) + '</dd>' +
+          '<dt>request</dt><dd>' + esc(e.req) + '</dd>' +
+          '<dt>response</dt><dd>' + esc(e.resp) + '</dd>' +
+          (e.erros.length ? '<dt>erros</dt><dd>' + e.erros.map(x => '<span class="pill bad" style="margin:2px 4px 2px 0">' + esc(x.split(' ')[0]) + '</span> <span class="mut">' + esc(x.split(' ').slice(1).join(' ')) + '</span><br>').join('') + '</dd>' : '') +
+          (e.notas ? '<dt>notas</dt><dd class="mut">' + esc(e.notas) + '</dd>' : '') +
+        '</dl>' +
+        fluxoDoEndpoint(e) +
+      '</div>' +
+    '</div>').join('');
+  const alvo = $('lista-endpoints');
+  alvo.innerHTML = html + '<div class="empty hide" id="ep-vazio">nenhum endpoint corresponde ao filtro/busca</div>';
+  aplicarFiltros();
+}
+function toggleEp(i){
+  const els = document.querySelectorAll('#lista-endpoints .ep');
+  if(els[i]) els[i].classList.toggle('open');
+}
+
+/* ================= credenciais ================= */
+function stPill(s){
+  const c = s.indexOf('ROTACIONAR') === 0 ? 'bad' : (s.indexOf('CONFIRMAR') === 0 ? 'warn' : 'ok');
+  return '<span class="pill ' + c + '">' + esc(s) + '</span>';
+}
+function renderCreds(){
+  $('lista-credenciais').innerHTML = CREDS.map(c =>
+    '<div class="panel" data-busca="' + esc((c.api + ' ' + c.itens.map(x => x.n).join(' ')).toLowerCase()) + '">' +
+      '<div class="panel-h"><h3>' + c.icone + ' ' + esc(c.api) + '</h3><span class="tag">' + c.itens.length + ' item(ns)</span></div>' +
+      '<div class="panel-b"><table><tr><th>Nome</th><th>O que é</th><th>Onde vive</th><th>Variável de ambiente</th><th>Estado</th></tr>' +
+      c.itens.map(i =>
+        '<tr><td class="cy" style="font-weight:600">' + esc(i.n) + '</td><td class="mut">' + esc(i.tipo) + '</td>' +
+        '<td class="dim">' + esc(i.onde) + '</td><td><code>' + esc(i.env) + '</code></td>' +
+        '<td>' + stPill(i.status) + '</td></tr>').join('') +
+      '</table><div class="mut" style="font-family:var(--mono);font-size:var(--fs-xs);margin-top:10px;line-height:1.7">' + esc(c.nota) + '</div></div>' +
+    '</div>').join('');
+}
+
+/* ================= plano ================= */
+function renderPlano(){
+  $('plano-times').innerHTML = TIMES.map((t, ti) =>
+    '<div class="team-h"><span class="team-badge" style="color:#04121a;background:' + t.cor + '">' + esc(t.time) + '</span>' +
+    '<span class="mut" style="font-family:var(--mono);font-size:var(--fs-xs)" id="prog-' + ti + '"></span></div>' +
+    t.itens.map((item, ii) =>
+      '<label class="check" data-k="pl-' + ti + '-' + ii + '"><input type="checkbox" onchange="salvaCheck(this)">' +
+      '<span>' + esc(item) + '</span></label>').join('')).join('');
+  TIMES.forEach((t, ti) => {
+    t.itens.forEach((_, ii) => {
+      const k = 'pl-' + ti + '-' + ii;
+      let v = false;
+      try { v = localStorage.getItem(k) === '1'; } catch(e){}
+      const el = document.querySelector('.check[data-k="' + k + '"]');
+      if(el){ el.querySelector('input').checked = v; el.classList.toggle('done', v); }
+    });
+    contaProgresso(ti);
+  });
+}
+function salvaCheck(inp){
+  const label = inp.closest('.check');
+  label.classList.toggle('done', inp.checked);
+  try { localStorage.setItem(label.dataset.k, inp.checked ? '1' : '0'); } catch(e){}
+  TIMES.forEach((t, ti) => {
+    if(t.itens.indexOf(t.itens.find((x, ii) => 'pl-' + ti + '-' + ii === label.dataset.k)) >= 0) contaProgresso(ti);
+  });
+}
+function contaProgresso(ti){
+  const t = TIMES[ti];
+  let n = 0;
+  t.itens.forEach((_, ii) => {
+    let v = false;
+    try { v = localStorage.getItem('pl-' + ti + '-' + ii) === '1'; } catch(e){}
+    if(v) n++;
+  });
+  const el = $('prog-' + ti);
+  if(el) el.textContent = n + '/' + t.itens.length + ' concluídas';
+}
+
+/* ================= tabs / busca / filtros ================= */
+let filtroAtual = 'todos';
+function setTab(id){
+  document.querySelectorAll('nav button').forEach(b => b.classList.toggle('active', b.dataset.tab === id));
+  document.querySelectorAll('section.tab').forEach(s => s.classList.toggle('active', s.id === 'tab-' + id));
+}
+document.querySelectorAll('nav button').forEach(b => b.addEventListener('click', () => setTab(b.dataset.tab)));
+
+document.querySelectorAll('#filtros .chip').forEach(c => c.addEventListener('click', () => {
+  document.querySelectorAll('#filtros .chip').forEach(x => x.classList.remove('on'));
+  c.classList.add('on');
+  filtroAtual = c.dataset.f;
+  aplicarFiltros();
+}));
+
+function aplicarFiltros(){
+  const q = $('busca').value.trim().toLowerCase();
+  document.querySelectorAll('#lista-endpoints .ep').forEach(el => {
+    const okF = filtroAtual === 'todos' || el.dataset.m === filtroAtual || el.dataset.dom === filtroAtual;
+    const okQ = !q || el.dataset.busca.indexOf(q) >= 0;
+    el.classList.toggle('hide', !(okF && okQ));
+  });
+  const vazio = $('ep-vazio');
+  if(vazio){
+    const visiveis = document.querySelectorAll('#lista-endpoints .ep:not(.hide)').length;
+    vazio.classList.toggle('hide', visiveis > 0);
+  }
+  // busca global nas outras abas
+  document.querySelectorAll('#lista-credenciais .panel, #tb-tec tr').forEach(el => {
+    if(!q){ el.classList.remove('hide'); return; }
+    const txt = (el.dataset.busca || el.textContent).toLowerCase();
+    el.classList.toggle('hide', txt.indexOf(q) < 0);
+  });
+}
+$('busca').addEventListener('input', aplicarFiltros);
+
+/* ================= micro-fluxo: do boot a primeira chamada ================= */
+const FLUXOS = {
+  service: {
+    nome: 'Service (a orquestracao)',
+    boot: [
+      'Nada especifico no boot: a classe @Service so eh instanciada quando o controller pedir ela no construtor.',
+      'A partir dai, o MESMO objeto atende todas as requisicoes (singleton do Spring).',
+      'Eh aqui que vive a regra: ordem das chamadas, status do contrato, traducao de erro.'
+    ],
+    ramos: [
+      {t:'regra de negocio ok', ctx:'segue para banco e/ou provedor, na ordem certa: salva ANTES, chama o provedor FORA de transacao, atualiza o status depois.'},
+      {t:'regra violada', ctx:'ex.: dataFim antes de dataInicio lanca IllegalArgumentException, que o GlobalExceptionHandler transforma em 400 — o provedor nunca eh chamado.'},
+      {t:'provedor falhou', ctx:'marca FALHA no contrato (quando existe registro), republica a excecao ja traduzida: 502, 503 (429) ou 504 (timeout).'},
+      {t:'recurso nao existe', ctx:'findById devolve Optional vazio -> RecursoNaoEncontradoException -> 404.'}
+    ]
+  },
+  controller: {
+    nome: 'Controller (a porta de entrada)',
+    boot: [
+      'Na subida, o Spring escaneia as classes com @RestController e registra cada rota (@RequestMapping, @GetMapping...).',
+      'Cada controller vira UM objeto (singleton), criado uma unica vez, recebendo o service pelo construtor.',
+      'Nenhuma regra de negocio aqui: converter, validar e devolver DTO.'
+    ],
+    ramos: [
+      {t:'chegou @RequestBody', ctx:'o JSON vira DTO; se estiver @Valid e falhar, volta 400 com a lista de campos invalidos antes de existir service.'},
+      {t:'veio @PathVariable ou query', ctx:'convertido para o tipo do metodo; valor impossivel (letra onde espera numero) da 400.'},
+      {t:'deu tudo certo', ctx:'chama o service e devolve o DTO — ou 201 + header Location quando eh criacao.'},
+      {t:'rota nao existe', ctx:'404 do proprio Spring: nenhum controller eh envolvido.'}
+    ]
+  },
+  cliente: {
+    nome: 'Cliente HTTP (quem esta de fora)',
+    boot: [
+      'Nao existe dentro da aplicacao: eh o navegador, o Postman, outro sistema.',
+      'A aplicacao so comeca a atender quando o servidor embutido do Spring Boot termina de subir e a porta 8080 aceita conexoes.',
+      'A primeira chamada possivel eh qualquer endpoint, no momento em que o listener fica de pe.'
+    ],
+    ramos: [
+      {t:'pedido bem formado', ctx:'segue para o controller; a resposta volta em JSON — na criacao, 201 com Location apontando para o novo recurso.'},
+      {t:'JSON invalido ou campo faltando', ctx:'400 antes de existir service: o corpo nem chega a virar DTO.'},
+      {t:'rota inexistente', ctx:'404 do Spring, sem passar por controller nenhum.'}
+    ]
+  },
+  repositorio: {
+    nome: 'Repository + H2 (o banco)',
+    boot: [
+      'Na subida, o Hibernate le as classes @Entity e cria as tabelas — o ddl-auto=create-drop DERRUBA e RECRIA tudo a cada start.',
+      'O datasource H2 em memoria sobe junto: jdbc:h2:mem:apisdb, usuario sa, sem senha.',
+      'Cada interface *Repository vira bean do Spring Data, com metodos prontos (save, findById, findAllByOrderByCriadoEmDesc).'
+    ],
+    ramos: [
+      {t:'save()', ctx:'INSERT ou UPDATE; a entidade ganha o id gerado pelo banco (@GeneratedValue identity).'},
+      {t:'findById() vazio', ctx:'devolve Optional vazio; o service lanca RecursoNaoEncontradoException — 404 na saida.'},
+      {t:'aplicacao reiniciou', ctx:'banco em memoria acabou: tabelas recriadas VAZIAS — contratos e imagens desaparecem (pendencia do time de banco).'},
+      {t:'metodo derivado', ctx:'findAllByOrderByCriadoEmDesc: o Spring monta o SQL pelo NOME do metodo — a ordenacao acontece no banco, nao na memoria.'}
+    ]
+  },
+  apitemplate: {
+    nome: 'ApiTemplateClient (PDF do contrato)',
+    boot: [
+      'O Spring le application.properties e monta ApiTemplateProperties: baseUrl, chave, templateId e timeouts (3s conexao / 30s leitura).',
+      'RestClientConfig cria o bean apitemplateRestClient com essa base e esses timeouts — uma vez, no startup.',
+      'O ApiTemplateClient so eh instanciado quando o ContratoService pedir ele no construtor, ja com o RestClient pronto (e por isso os testes trocam esse objeto pelo MockRestServiceServer).'
+    ],
+    ramos: [
+      {t:'1ª chamada de verdade (POST /contratos)', ctx:'service salva PENDENTE e chama gerarPdf(): POST /create-pdf com header X-API-KEY e o corpo mapeado do contrato (snake_case, formato do provedor).'},
+      {t:'template_id nao configurado', ctx:'502 antes de sair da maquina — erro de configuracao do servidor, nao do provedor.'},
+      {t:'provedor respondeu 200 COM download_url', ctx:'contrato marcado GERADO; pdfUrl e transactionRef salvos no banco.'},
+      {t:'200 SEM download_url', ctx:'IntegrationException: contrato marcado FALHA e o cliente recebe 502.'},
+      {t:'erro 4xx/5xx', ctx:'traduzido pelo ProvedorHttp: 401/403 credencial invalida (502), 429 limite (503 + Retry-After), resto 502.'},
+      {t:'demorou alem do limite', ctx:'ResourceAccessException: 504 (tempo esgotado).'}
+    ]
+  },
+  cloudinary: {
+    nome: 'CloudinaryClient (imagens)',
+    boot: [
+      'CloudinaryConfig le CloudinaryProperties e monta o bean do SDK: cloud_name, chaves e timeout UNICO de 15s (limitacao do SDK).',
+      'O CloudinaryClient nasce quando o ImagemService pede — ja com o SDK configurado.',
+      'Nada de rede acontece no boot: a primeira chamada so ocorre na primeira requisicao de upload.'
+    ],
+    ramos: [
+      {t:'1ª chamada (POST /imagens)', ctx:'valida magic bytes, le os bytes do arquivo e chama uploader().upload(bytes, {folder, resource_type}).'},
+      {t:'upload ok', ctx:'guarda publicId, url, formato, bytes, largura e altura no banco; devolve 201.'},
+      {t:'IO ou erro do SDK', ctx:'IntegrationException de falha (502) — nada eh salvo no banco.'},
+      {t:'GET /imagens/{id}/url', ctx:'NAO chama a rede: monta a URL de transformacao em cima do publicId (corte, formato, qualidade) — editar sem reenviar.'},
+      {t:'DELETE', ctx:'destroy(publicId) no provedor e delete no banco.'}
+    ]
+  },
+  nylas: {
+    nome: 'NylasClient (agenda)',
+    boot: [
+      'Spring le nylas.* e monta NylasProperties: baseUrl v3, chave, grantId, calendarId.',
+      'bean nylasRestClient criado no startup (timeouts 3s / 15s).',
+      'NylasClient instanciado sob demanda pelo AgendaService — a agenda NAO tem tabela propria: o Nylas eh a fonte da verdade.'
+    ],
+    ramos: [
+      {t:'1ª chamada (GET /agenda/eventos)', ctx:'converte inicio/fim para timestamp Unix e chama GET /v3/grants/{grantId}/events?calendar_id=...&start=...&end=...'},
+      {t:'resposta do provedor', ctx:'envelope request_id/data: so o data volta, convertido para o dominio (timestamps viram OffsetDateTime no fuso certo).'},
+      {t:'POST/PUT', ctx:'monta o corpo no formato Nylas (when com epoch + timezone); participantes como lista VAZIA zeram a lista — nunca null (correcao #6).'},
+      {t:'404 em PUT/DELETE', ctx:'evento inexistente: como nao ha tabela propria, o 404 do Nylas vira 404 da API.'},
+      {t:'404 em listar/criar', ctx:'aponta grant/calendario invalido: vira 502, nao 404.'}
+    ]
+  }
+};
+
+const FLUXO_EP = {
+  'POST /contratos': {
+    boot: [
+      'HTTP chega no ContratoController.criar() com o JSON do contrato.',
+      '@Valid valida os 13 campos; falha volta 400 antes do service.',
+      'ContratoService.criar() salva PENDENTE e chama o APITemplate FORA de transacao.'
+    ],
+    ramos: [
+      {t:'provedor ok', ctx:'status GERADO; resposta 201 + Location com pdfUrl preenchido.'},
+      {t:'provedor falhou/timeout', ctx:'status FALHA registrado; cliente recebe 502/504.'},
+      {t:'validacao falhou', ctx:'400 com errors:[{campo, mensagem}] — nada foi salvo.'}
+    ]
+  },
+  'GET /contratos': {
+    boot: [
+      'Controller chama service.listar().',
+      'Repository devolve tudo ordenado por criadoEm desc — ordenacao no banco.',
+      'Cada entity vira ContratoResponseDTO (id, nome, status, pdfUrl, criadoEm).'
+    ],
+    ramos: [
+      {t:'lista vazia', ctx:'devolve [] com 200 — nao eh erro.'},
+      {t:'muitos registros', ctx:'sem paginacao hoje: a lista inteira vem de uma vez (pendencia de backend).'}
+    ]
+  },
+  'GET /contratos/{id}': {
+    boot: ['Controller chama service.buscarPorId(id).', 'findById no banco.', 'Entity vira DTO.'],
+    ramos: [
+      {t:'existe', ctx:'200 com o DTO.'},
+      {t:'nao existe', ctx:'RecursoNaoEncontradoException -> 404.'}
+    ]
+  },
+  'POST /imagens': {
+    boot: [
+      'multipart chega no ImagemController; limite de 10 MB.',
+      'validarArquivo() checa vazio/tamanho; TipoImagem.detectar() confere os magic bytes (conteudo, nao extensao).',
+      'Bytes lidos e enviados ao Cloudinary; resultado vira entity e eh salvo.'
+    ],
+    ramos: [
+      {t:'imagem valida', ctx:'201 com publicId, url e metadados.'},
+      {t:'arquivo invalido', ctx:'400 (vazio, maior que 10 MB ou formato nao suportado).'},
+      {t:'provedor falhou', ctx:'502 — e nada eh salvo no banco.'}
+    ]
+  },
+  'GET /imagens': {
+    boot: [
+      'Controller chama service.listar().',
+      'Repository devolve as imagens ordenadas por criadoEm desc.',
+      'Cada entity vira ImagemResponseDTO (id, publicId, url, formato, bytes, dimensoes, criadoEm).'
+    ],
+    ramos: [
+      {t:'lista vazia', ctx:'[] com 200 — nao eh erro.'},
+      {t:'muitas imagens', ctx:'sem paginacao hoje: a lista inteira vem de uma vez (pendencia de backend).'}
+    ]
+  },
+  'GET /imagens/{id}': {
+    boot: ['Controller chama service.buscarPorId(id).', 'findById no banco.', 'Entity vira DTO com a URI original.'],
+    ramos: [
+      {t:'existe', ctx:'200 com metadados e URI.'},
+      {t:'nao existe', ctx:'404 via RecursoNaoEncontradoException.'}
+    ]
+  },
+  'GET /imagens/{id}/url': {
+    boot: [
+      'Controller busca a imagem pelo id (404 se nao existir).',
+      'TransformacaoParams chega da query; cada parameto tem lista fechada.',
+      'CloudinaryClient.gerarUrl() monta a URL transformada em cima do publicId — sem rede.'
+    ],
+    ramos: [
+      {t:'sem parametros', ctx:'devolve a URI original.'},
+      {t:'com parametros', ctx:'URI com corte/formato/qualidade — edicao sem novo upload.'},
+      {t:'parametro fora da lista', ctx:'400 antes de montar a URI.'}
+    ]
+  },
+  'DELETE /imagens/{id}': {
+    boot: ['Busca a imagem (404 se nao existir).', 'Chama destroy(publicId) no Cloudinary.', 'Apaga o registro no banco.'],
+    ramos: [
+      {t:'existia', ctx:'204 — removido no provedor e no banco.'},
+      {t:'provedor falhou', ctx:'502; o registro sai do banco so se a remocao der certo.'}
+    ]
+  },
+  'GET /agenda/eventos': {
+    boot: [
+      'Controller converte inicio/fim (ISO 8601) para timestamp Unix.',
+      'Valida periodo: fim <= inicio da 400 antes de chamar o provedor.',
+      'NylasClient.listar() consulta o calendario e converte a resposta para o dominio.'
+    ],
+    ramos: [
+      {t:'intervalo valido', ctx:'200 com a lista — o Nylas devolve no maximo 50 eventos por pagina.'},
+      {t:'fim <= inicio', ctx:'400 sem chamar o provedor.'},
+      {t:'sem datas', ctx:'lista tudo o que o Nylas devolver.'}
+    ]
+  },
+  'POST /agenda/eventos': {
+    boot: [
+      '@Valid valida titulo, inicio, fim e participantes.',
+      'fusoHorario vazio vira America/Sao_Paulo; fuso invalido (ZoneId.of falha) da 400.',
+      'NylasClient.criar() monta o corpo no formato do provedor e envia.'
+    ],
+    ramos: [
+      {t:'criado', ctx:'201 com o evento criado.'},
+      {t:'provedor nao devolveu o evento', ctx:'502 (IntegrationException).'},
+      {t:'participantes null', ctx:'viram lista vazia — null seria lido como "nao alterar".'}
+    ]
+  },
+  'PUT /agenda/eventos/{id}': {
+    boot: [
+      'Mesma validacao do POST.',
+      'atualizar() envia o corpo completo para o evento especifico.',
+      'Resposta convertida para o dominio.'
+    ],
+    ramos: [
+      {t:'atualizado', ctx:'200 com o evento.'},
+      {t:'participantes []', ctx:'ZERA a lista de participantes (correcao #6).'},
+      {t:'404 do Nylas', ctx:'evento inexistente: vira 404 da API (fonte da verdade eh o provedor).'}
+    ]
+  },
+  'DELETE /agenda/eventos/{id}': {
+    boot: ['Chama delete no evento especifico.', 'Sem corpo de resposta (204).'],
+    ramos: [
+      {t:'existia', ctx:'204.'},
+      {t:'nao existia', ctx:'404 — traduzido so em chamada sobre evento especifico.'}
+    ]
+  }
+};
+
+const FLUXO_CAMPO = {
+  'status': {
+    nome: 'Contrato.status',
+    boot: [
+      'Nasce PENDENTE em Contrato.novo() — antes de qualquer chamada ao provedor.',
+      'So muda depois, por marcarGerado() ou marcarFalha(), chamados pelo service.',
+      'Guardado como enum em coluna de 20 chars (PENDENTE/GERADO/FALHA).'
+    ],
+    ramos: [
+      {t:'provedor ok', ctx:'GERADO, com pdfUrl e transactionRef preenchidos.'},
+      {t:'provedor falhou', ctx:'FALHA — o contrato fica registrado para reprocessamento.'},
+      {t:'nunca muda sozinho', ctx:'a entity nao conhece o provedor: quem decide eh o service.'}
+    ]
+  },
+  'pdfUrl': {
+    nome: 'Contrato.pdfUrl',
+    boot: ['Campo opcional (1000 chars); nasce vazio.', 'So recebe valor quando o APITemplate devolve o download_url.'],
+    ramos: [
+      {t:'GERADO', ctx:'link do PDF no provedor.'},
+      {t:'PENDENTE ou FALHA', ctx:'continua null — e a resposta da API reflete isso.'},
+      {t:'validade do link', ctx:'evidencia pratica: PDFs gerados ha horas seguem acessiveis, mas a permanencia nao eh garantida pela documentacao (risco residual).'}
+    ]
+  },
+  'criadoEm': {
+    nome: 'criadoEm',
+    boot: ['Preenchido uma vez com OffsetDateTime.now() na fabrica Contrato.novo().', 'Usado para ordenar a listagem (findAllByOrderByCriadoEmDesc).'],
+    ramos: [
+      {t:'listagem', ctx:'o banco ordena por ele — nenhum sorted() em memoria.'},
+      {t:'fuso', ctx:'OffsetDateTime carrega o fuso: evita ambiguidade entre cliente e servidor.'}
+    ]
+  },
+  'cpfCliente': {
+    nome: 'Contrato.cpfCliente',
+    boot: [
+      'Validado no DTO pela anotacao @CPF (algoritmo, com ou sem mascara) ANTES de virar entity.',
+      'Coluna de 14 chars — dado pessoal sujeito a LGPD.'
+    ],
+    ramos: [
+      {t:'CPF invalido', ctx:'400 — nem chega ao service.'},
+      {t:'valido', ctx:'segue para o template do PDF e para o banco.'}
+    ]
+  },
+  'valorOrcado': {
+    nome: 'Contrato.valorOrcado',
+    boot: [
+      'BigDecimal — dinheiro nao pode ser float (erraria centavos).',
+      '@Digits limita 12 inteiros e 2 decimais; @Positive exige valor acima de zero.'
+    ],
+    ramos: [
+      {t:'valor com centavos', ctx:'vai como numero para o template do PDF.'},
+      {t:'zero, negativo ou 3 casas', ctx:'400 de validacao.'}
+    ]
+  },
+  'id': {
+    nome: 'id (chave primaria)',
+    boot: ['@GeneratedValue identity: quem gera eh o banco, nao o Java.', 'So existe depois do primeiro save().'],
+    ramos: [
+      {t:'save()', ctx:'id preenchido — eh ele que vai no Location do 201.'},
+      {t:'antes do save', ctx:'null.'}
+    ]
+  },
+  'publicId': {
+    nome: 'Imagem.publicId',
+    boot: [
+      'Identificador unico do arquivo no Cloudinary; vem do resultado do upload.',
+      'Coluna unique — impede dois registros com o mesmo id.'
+    ],
+    ramos: [
+      {t:'upload ok', ctx:'publicId guardado; eh a chave para transformar URI e para remover.'},
+      {t:'delete', ctx:'destroy(publicId) no provedor usando esse valor.'}
+    ]
+  },
+  'bytes': {
+    nome: 'Imagem.bytes',
+    boot: ['Tamanho real do arquivo, dos metadados do provedor.', 'A entrada ja foi limitada em 10 MB no controller e no properties.'],
+    ramos: [
+      {t:'upload ok', ctx:'guardado como numero (Long).'},
+      {t:'acima de 10 MB', ctx:'400 antes de qualquer chamada de rede.'}
+    ]
+  },
+  'formato': {
+    nome: 'Imagem.formato',
+    boot: ['Vem do Cloudinary (jpg/png/webp), NAO da extensao do arquivo.', 'A entrada foi validada por magic bytes antes do upload.'],
+    ramos: [
+      {t:'formato real', ctx:'gravado no banco com o que o provedor detectou.'},
+      {t:'extensao mente', ctx:'um .jpg que eh PNG passa pela validacao de conteudo e eh aceito pelo que ele eh de verdade.'}
+    ]
+  },
+  'url': {
+    nome: 'Imagem.url',
+    boot: ['URI original devolvida pelo provedor no upload.', 'Serve de base para a transformacao por URI.'],
+    ramos: [
+      {t:'GET /{id}/url', ctx:'transformacao montada em cima dela, sem novo upload.'},
+      {t:'secure_url', ctx:'o client guarda a versao segura (https) do Cloudinary.'}
+    ]
+  }
+};
+
+const FLUXO_TEC = {
+  'Spring Boot': {
+    nome: 'Spring Boot 4.1.1',
+    boot: [
+      'Ao iniciar, sobe o contexto: procura @Component/@Service/@Configuration e cria os beans.',
+      'Servidor embutido (Tomcat) sobe e a porta 8080 passa a aceitar HTTP.',
+      'Ordem: propriedades -> beans -> filtros -> controllers prontos.'
+    ],
+    ramos: [
+      {t:'perfil local', ctx:'liga console H2 e Swagger (respondem 200).'},
+      {t:'perfil padrao (producao)', ctx:'os dois respondem 404; headers de seguranca presentes em toda resposta.'},
+      {t:'contexto nao sobe', ctx:'erro de configuracao (chave faltando, bean ciclico) derruba a aplicacao no start.'}
+    ]
+  },
+  'Java': {
+    nome: 'Java 21',
+    boot: ['A JVM inicia com o manifesto do jar.', 'Aplica as anotacoes do Lombok em tempo de compilacao (getters/setters).'],
+    ramos: [
+      {t:'records', ctx:'DTOs sao records: imutaveis, com equals/hashCode/toString de graca.'},
+      {t:'streams', ctx:'usadas para converter lista de entity em lista de DTO (.map().toList()).'}
+    ]
+  },
+  'Maven': {
+    nome: 'Maven (wrapper)',
+    boot: ['mvnw baixa a versao certa do Maven.', 'surefire configurado enxuto: fork isolado por classe, -Xmx384m (RAM escassa).'],
+    ramos: [
+      {t:'mvnw test', ctx:'roda os 61 testes, nenhum chamando API real.'},
+      {t:'mvnw spring-boot:run', ctx:'sobe a aplicacao no perfil escolhido.'},
+      {t:'fork morre', ctx:'RAM: aconteceu nesta maquina — rodar a classe isolada confirma se era so memoria.'}
+    ]
+  },
+  'Spring Web MVC': {
+    nome: 'Spring Web MVC',
+    boot: ['Registra as rotas dos @RestController na subida.', 'Converte JSON <-> DTO com Jackson.'],
+    ramos: [
+      {t:'@RequestBody', ctx:'JSON vira DTO antes do metodo rodar.'},
+      {t:'@Valid', ctx:'falha de validacao nem chega no service.'}
+    ]
+  },
+  'Spring Data JPA + Hibernate': {
+    nome: 'Spring Data JPA + Hibernate',
+    boot: ['Le as @Entity e cria as tabelas no startup.', 'Cada interface de repositorio vira bean com metodos prontos.'],
+    ramos: [
+      {t:'metodo derivado', ctx:'findAllByOrderByCriadoEmDesc: SQL montado pelo nome do metodo.'},
+      {t:'open-in-view=false', ctx:'sessao fechada fora da requisicao: sem query escondida.'},
+      {t:'create-drop', ctx:'otimo em dev; em producao deve ser validate + migracoes (Flyway).'}
+    ]
+  },
+  'H2 Database': {
+    nome: 'H2 em memoria',
+    boot: ['datasource jdbc:h2:mem:apisdb sobe no startup (usuario sa, sem senha).', 'Hibernate cria as tabelas pelas @Entity.'],
+    ramos: [
+      {t:'app reiniciou', ctx:'banco acabou: tabelas recriadas vazias — dados perdidos.'},
+      {t:'perfil local', ctx:'console H2 disponivel em /h2-console.'},
+      {t:'migracao', ctx:'destino: PostgreSQL real da maquina (ja endurecido em 127.0.0.1).'}
+    ]
+  },
+  'Bean Validation': {
+    nome: 'Bean Validation',
+    boot: ['Anotacoes (@NotBlank, @CPF, @Digits, @AssertTrue) lidas uma vez e aplicadas em toda requisicao.'],
+    ramos: [
+      {t:'falhou', ctx:'MethodArgumentNotValidException -> 400 com errors:[{campo, mensagem}].'},
+      {t:'passou', ctx:'segue para o service.'}
+    ]
+  },
+  'Spring RestClient': {
+    nome: 'Spring RestClient',
+    boot: ['beans criados no RestClientConfig: um por provedor, com baseUrl e timeouts proprios.'],
+    ramos: [
+      {t:'erro 4xx/5xx', ctx:'onStatus lanca ErroProvedor dentro do client.'},
+      {t:'timeout', ctx:'ResourceAccessException -> 504.'},
+      {t:'teste', ctx:'MockRestServiceServer substitui o bean — prova o client sem rede.'}
+    ]
+  },
+  'Cloudinary SDK (cloudinary-http5)': {
+    nome: 'Cloudinary SDK 2.5.0',
+    boot: ['bean unico criado no CloudinaryConfig com as chaves das properties.'],
+    ramos: [
+      {t:'upload', ctx:'chamada de rede; resultado vira entity.'},
+      {t:'transformacao', ctx:'so monta URI, sem rede.'},
+      {t:'timeout unico', ctx:'o SDK tem um so timeout (15s): conexao lenta demora 15s para falhar.'}
+    ]
+  },
+  'SpringDoc OpenAPI': {
+    nome: 'SpringDoc 3.1.0',
+    boot: ['gerador ligado por flag; no boot monta o documento /v3/api-docs a partir dos controllers.'],
+    ramos: [
+      {t:'perfil local', ctx:'Swagger UI em /swagger-ui.html.'},
+      {t:'producao', ctx:'404 — nao vaza a superficie da API.'}
+    ]
+  },
+  'Lombok': {
+    nome: 'Lombok',
+    boot: ['plugin de compilacao: gera getters/setters das entities durante o build.'],
+    ramos: [
+      {t:'compile', ctx:'metodos aparecem no .class sem voce escrever.'},
+      {t:'entity', ctx:'continua visivel so dentro do service — nunca no controller.'}
+    ]
+  },
+  'JUnit + Mockito + MockRestServiceServer': {
+    nome: 'Suite de testes',
+    boot: ['surefire sobe um processo JVM isolado por classe de teste.'],
+    ramos: [
+      {t:'Mockito', ctx:'substitui repository/client nos testes de service.'},
+      {t:'MockRestServiceServer', ctx:'finge o provedor nos testes de client — 0 chamadas reais.'},
+      {t:'@WebMvcTest', ctx:'sobe so a camada web nos testes de controller.'}
+    ]
+  },
+  'APITemplate.io API': {
+    nome: 'APITemplate.io (externo)',
+    boot: ['nada sobe com a aplicacao: eh servico externo.', 'A primeira chamada acontece na primeira requisicao de PDF.'],
+    ramos: [
+      {t:'fora do ar', ctx:'timeout -> 504.'},
+      {t:'respondeu erro', ctx:'traduzido para 502/503 pelo ProvedorHttp.'},
+      {t:'template_id', ctx:'precisa existir na conta; sem ele, 502 antes de sair.'}
+    ]
+  },
+  'Nylas API': {
+    nome: 'Nylas v3 (externo)',
+    boot: ['nada sobe com a aplicacao.', 'A primeira chamada acontece na primeira requisicao de agenda.'],
+    ramos: [
+      {t:'grant/calendario', ctx:'IDs vem das properties; grant invalido devolve 404 -> 502.'},
+      {t:'timestamps', ctx:'a API trabalha em epoch Unix; a conversao de fuso acontece no client.'}
+    ]
+  },
+  'Cloudinary API': {
+    nome: 'Cloudinary (externo)',
+    boot: ['nada sobe com a aplicacao.', 'A primeira chamada acontece no primeiro upload.'],
+    ramos: [
+      {t:'upload', ctx:'rede; resultado vira entity no banco.'},
+      {t:'transformacao', ctx:'so URI — nenhuma chamada.'}
+    ]
+  },
+  'PostgreSQL': {
+    nome: 'PostgreSQL (destino)',
+    boot: ['hoje nao participa: o banco eh H2 em memoria.', 'Na migracao, passa a ser o datasource — e ai os dados sobrevivem ao restart.'],
+    ramos: [
+      {t:'migracao', ctx:'trocar datasource + ddl-auto=validate + scripts Flyway.'},
+      {t:'backup', ctx:'pg_dump agendado depois de migrar.'}
+    ]
+  }
+};
+
+const FLUXO_CRED = {
+  'APITEMPLATE_API_KEY': {
+    nome: 'APITEMPLATE_API_KEY',
+    boot: ['Lida na subida pelo ApiTemplateProperties.', 'Injetada no client via construtor; usada no header X-API-KEY.'],
+    ramos: [
+      {t:'presente e valida', ctx:'chamada autenticada segue normalmente.'},
+      {t:'faltando/vazia', ctx:'provedor devolve 401/403 -> credencialInvalida -> 502.'},
+      {t:'exposicao', ctx:'chave vive em .env / application-local.properties — ROTACIONAR (exposta em conversa).'}
+    ]
+  },
+  'APITEMPLATE_TEMPLATE_ID': {
+    nome: 'APITEMPLATE_TEMPLATE_ID',
+    boot: ['Lida na subida; vai como query param template_id.'],
+    ramos: [
+      {t:'configurado', ctx:'PDF gerado no modelo certo.'},
+      {t:'vazio', ctx:'502 antes de sair da maquina (erro de configuracao, nao do provedor).'}
+    ]
+  },
+  'CLOUDINARY_CLOUD_NAME': {
+    nome: 'CLOUDINARY_CLOUD_NAME',
+    boot: ['Entra no bean do SDK montado no CloudinaryConfig.'],
+    ramos: [
+      {t:'presente', ctx:'upload e transformacao usam a cloud certa.'},
+      {t:'errado', ctx:'falha de autenticacao/IO no SDK -> 502.'}
+    ]
+  },
+  'CLOUDINARY_API_KEY': {
+    nome: 'CLOUDINARY_API_KEY',
+    boot: ['Par da chave secreta; entra no bean do SDK.'],
+    ramos: [
+      {t:'validas', ctx:'upload autorizado.'},
+      {t:'invalidas', ctx:'erro do SDK -> 502; registro NAO eh salvo.'}
+    ]
+  },
+  'CLOUDINARY_API_SECRET': {
+    nome: 'CLOUDINARY_API_SECRET',
+    boot: ['Segredo que assina as chamadas; entra no bean do SDK.'],
+    ramos: [
+      {t:'valido', ctx:'upload autorizado.'},
+      {t:'exposto', ctx:'quem tem o segredo manda na conta — ROTACIONAR.'}
+    ]
+  },
+  'NYLAS_API_KEY': {
+    nome: 'NYLAS_API_KEY',
+    boot: ['Lida na subida; usada no header Authorization: Bearer.'],
+    ramos: [
+      {t:'valida', ctx:'CRUD da agenda funciona.'},
+      {t:'invalida', ctx:'401/403 do provedor -> 502.'},
+      {t:'exposicao', ctx:'ROTACIONAR (exposta em conversa).'}
+    ]
+  },
+  'NYLAS_GRANT_ID': {
+    nome: 'NYLAS_GRANT_ID',
+    boot: ['Identificador da conta autorizada; vai no caminho /v3/grants/{grantId}/events.'],
+    ramos: [
+      {t:'valido', ctx:'acessa a agenda do estudio.'},
+      {t:'invalido', ctx:'404 em QUALQUER operacao -> 502 (nao eh recurso inexistente, eh configuracao).'}
+    ]
+  },
+  'NYLAS_CALENDAR_ID': {
+    nome: 'NYLAS_CALENDAR_ID',
+    boot: ['Vai como query param calendar_id (padrao: primary).'],
+    ramos: [
+      {t:'valido', ctx:'consultas filtradas no calendario certo.'},
+      {t:'inexistente', ctx:'erro do provedor -> 502.'}
+    ]
+  },
+  'ESTUDIO_NOME': {
+    nome: 'ESTUDIO_NOME',
+    boot: ['Injetado no PDF pelo mapeamento dominio -> template do APITemplate.'],
+    ramos: [
+      {t:'preenchido', ctx:'nome correto no contrato.'},
+      {t:'vazio/exemplo', ctx:'PDF sai com dado errado — CONFIRMAR com o dono.'}
+    ]
+  },
+  'ESTUDIO_DOCUMENTO': {
+    nome: 'ESTUDIO_DOCUMENTO',
+    boot: ['Documento do estudio injetado no PDF.'],
+    ramos: [
+      {t:'preenchido', ctx:'contrato completo.'},
+      {t:'vazio/exemplo', ctx:'valor do exemplo ainda no PDF — CONFIRMAR.'}
+    ]
+  },
+  'H2_CONSOLE_ENABLED': {
+    nome: 'H2_CONSOLE_ENABLED',
+    boot: ['Flag lida no application.properties (padrao false).'],
+    ramos: [
+      {t:'true + perfil local', ctx:'console do banco em /h2-console.'},
+      {t:'false (producao)', ctx:'rota responde 404 — superficie de SQL arbitrario fechada.'}
+    ]
+  },
+  'SPRINGDOC_ENABLED': {
+    nome: 'SPRINGDOC_ENABLED',
+    boot: ['Flag que liga Swagger e /v3/api-docs (padrao false).'],
+    ramos: [
+      {t:'true + perfil local', ctx:'documentacao interativa disponivel.'},
+      {t:'false (producao)', ctx:'404 — nao vaza a API.'}
+    ]
+  },
+  'H2 (usuário sa / senha vazia)': {
+    nome: 'H2 (acesso de dev)',
+    boot: ['Credencial do banco em memoria; so existe no dev.'],
+    ramos: [
+      {t:'perfil local', ctx:'acesso total ao schema via console.'},
+      {t:'producao', ctx:'descartado com a migracao para PostgreSQL.'}
+    ]
+  }
+};
+
+/* ================= motor de micro-fluxo ================= */
+function fluxoHtml(d, mini){
+  return (mini ? '' : '<div class="fx-nome">◈ ' + esc(d.nome) + '</div><div class="fx-sub">do boot da aplicacao ate a primeira chamada</div>') +
+    '<ol class="fx-boot">' + d.boot.map(s => '<li>' + esc(s) + '</li>').join('') + '</ol>' +
+    '<div class="fx-sub">ramificacoes — passe o mouse num galho</div>' +
+    '<div class="fx-ramos">' + d.ramos.map((r, i) => '<div class="ramo" data-i="' + i + '">▸ ' + esc(r.t) + '</div>').join('') + '</div>' +
+    '<div class="fx-ctx">…</div>';
+}
+function painelFluxo(id, d, mini){
+  const el = $(id);
+  if(!el || !d) return;
+  el.innerHTML = fluxoHtml(d, mini);
+  const ctx = el.querySelector('.fx-ctx');
+  if(ctx) ctx.textContent = 'passe o mouse (ou toque) em uma ramificacao para ver o contexto';
+  el.querySelectorAll('.ramo').forEach(r => {
+    const mostrar = () => { if(ctx) ctx.textContent = d.ramos[+r.dataset.i].ctx; };
+    r.addEventListener('mouseenter', mostrar);
+    r.addEventListener('click', () => {
+      el.querySelectorAll('.ramo').forEach(x => x.classList.remove('pin'));
+      r.classList.add('pin');
+      mostrar();
+    });
+  });
+}
+
+/* --- diagrama: hover nas caixas --- */
+function ligarDiagrama(){
+  const boxes = Array.from(document.querySelectorAll('svg [data-comp]'));
+  function sel(el){ boxes.forEach(b => b.classList.remove('sel')); if(el) el.classList.add('sel'); }
+  boxes.forEach(b => {
+    const abrir = () => { sel(b); painelFluxo('fx-diagrama', FLUXOS[b.dataset.comp], false); };
+    b.addEventListener('mouseenter', abrir);
+    b.addEventListener('click', abrir);
+  });
+  painelFluxo('fx-diagrama', FLUXOS.service, false);
+}
+
+/* --- tabelas: hover nas linhas (entidades, tecnologias, credenciais) --- */
+function ligarTabelas(){
+  const mapa = [
+    { sel: '#tab-entidades table tr', alvo: 'fx-campo', dados: FLUXO_CAMPO },
+    { sel: '#tb-tec tr',              alvo: 'fx-tec',   dados: FLUXO_TEC },
+    { sel: '#lista-credenciais tr',   alvo: 'fx-cred',  dados: FLUXO_CRED }
+  ];
+  mapa.forEach(m => {
+    document.querySelectorAll(m.sel).forEach(tr => {
+      const td = tr.querySelector('td');
+      if(!td) return;
+      const chave = td.textContent.trim();
+      if(!m.dados[chave]) return;
+      tr.classList.add('fx-row');
+      const abrir = () => painelFluxo(m.alvo, m.dados[chave], false);
+      tr.addEventListener('mouseenter', abrir);
+      tr.addEventListener('click', abrir);
+    });
+  });
+}
+
+/* --- endpoints: mini-fluxo dentro do card --- */
+function fluxoDoEndpoint(e){
+  const d = FLUXO_EP[e.m + ' ' + e.rota];
+  if(!d) return '';
+  return '<div class="fx fx-mini" style="margin-top:12px">' + fluxoHtml(d, true) + '</div>';
+}
+function ligarFluxosMini(){
+  document.querySelectorAll('#lista-endpoints .ep').forEach(ep => {
+    const rotaEl = ep.querySelector('.rota');
+    if(!rotaEl) return;
+    const d = FLUXO_EP[ep.dataset.m + ' ' + rotaEl.textContent.trim()];
+    const fx = ep.querySelector('.fx-mini');
+    if(!d || !fx) return;
+    const ctx = fx.querySelector('.fx-ctx');
+    fx.querySelectorAll('.ramo').forEach(r => {
+      const mostrar = () => { if(ctx) ctx.textContent = d.ramos[+r.dataset.i].ctx; };
+      r.addEventListener('mouseenter', mostrar);
+      r.addEventListener('click', () => {
+        fx.querySelectorAll('.ramo').forEach(x => x.classList.remove('pin'));
+        r.classList.add('pin');
+        mostrar();
+      });
+    });
+  });
+}
+
+renderEndpoints();
+renderCreds();
+renderPlano();
+ligarDiagrama();
+ligarTabelas();
+ligarFluxosMini();
+
+/* ================= glossario: contexto no hover ================= */
+const TERMOS = [
+  ['APITemplate.io','Serviço externo que gera o PDF do contrato: recebe os dados e devolve um link de download. O PDF não é gerado pelo nosso código.'],
+  ['Cloudinary','Serviço externo de imagens: guarda o arquivo e devolve a URL. Corte, formato e qualidade são definidos na própria URL, sem novo upload.'],
+  ['Nylas','API de calendário (v3). É a fonte da verdade da agenda: criar/atualizar/apagar aqui altera lá. Não guardamos eventos em banco.'],
+  ['Spring Boot','Framework Java que já traz servidor, configuração e convenções. A versão 4.1.1 é o "parent" do pom.xml.'],
+  ['Maven','Gerenciador de build: baixa dependências, compila e roda testes. No projeto entra pelo wrapper (mvnw.cmd) — não precisa instalar.'],
+  ['surefire','Plugin do Maven que roda os testes. Configurado enxuto (-Xmx384m) e com processo isolado por classe por causa da RAM da máquina.'],
+  ['Spring Web MVC','Camada web do Spring: recebe o HTTP, converte JSON, chama o service e devolve a resposta.'],
+  ['Spring Data JPA','Camada de persistência do Spring: repositórios com métodos prontos (save/findById/delete) sobre o Hibernate.'],
+  ['Hibernate','ORM: traduz as classes Java (entities) para tabelas SQL e cuida do CRUD.'],
+  ['H2 em memória','jdbc:h2:mem:apisdb — o banco vive só enquanto a aplicação está de pé. Contratos e imagens NÃO sobrevivem a restart.'],
+  ['H2','Banco relacional que roda embutido na própria JVM. Em modo memória, some quando o processo para.'],
+  ['Bean Validation','Validação por anotações (@NotBlank, @CPF...). Falha devolve 400 com a lista de erros por campo.'],
+  ['RestClient','Cliente HTTP do Spring usado para chamar os 3 provedores, com timeouts de conexão e leitura configurados.'],
+  ['SpringDoc OpenAPI','Gera a documentação Swagger/OpenAPI a partir do código. Fica desligado em produção (vazamento de superfície); liga só no perfil local.'],
+  ['Swagger','Interface interativa que lista os endpoints e permite testar. Só no perfil local.'],
+  ['Lombok','Gera getters/setters em tempo de compilação (@Getter/@Setter) — menos código repetido nas entities.'],
+  ['MockRestServiceServer','Simula respostas HTTP nos testes: prova o comportamento do client (200/4xx/5xx/timeout) sem chamar o provedor real.'],
+  ['JUnit','Framework de testes do ecossistema Java. São 61 testes e nenhum chama as APIs reais.'],
+  ['Flyway','Ferramenta de migração de banco: scripts SQL versionados aplicados em ordem. Substitui o ddl-auto em produção.'],
+  ['Liquibase','Alternativa ao Flyway, mesma ideia: migrações versionadas.'],
+  ['PostgreSQL','Banco relacional completo, já instalado e endurecido nesta máquina (escuta em 127.0.0.1). Destino da migração.'],
+  ['pg_dump','Utilitário de backup do PostgreSQL.'],
+  ['TLS','Criptografia do tráfego (o "S" de HTTPS). Hoje a aplicação sobe em HTTP puro; o TLS entra no ingress.'],
+  ['ingress','Ponto de entrada da rede (reverse proxy): recebe o tráfego externo e distribui para a aplicação. É onde o TLS deve terminar.'],
+  ['actuator','Módulo do Spring que expõe /health, /info e métricas — usado por monitoramento.'],
+  ['Spring Security','Módulo de autenticação/autorização do Spring. Hoje os endpoints estão abertos (pendência de backend).'],
+  ['LGPD','Lei Geral de Proteção de Dados: CPF e telefone são dados pessoais — exigem retenção definida, acesso controlado e cuidado em logs.'],
+  ['DTO','Data Transfer Object: record que trafega na API. Regra do projeto: entity NUNCA aparece em assinatura de controller.'],
+  ['entity','Classe que virou tabela no banco (mapeada pelo JPA). Fica dentro do service e não é exposta.'],
+  ['RFC 7807','Padrão de corpo de erro (ProblemDetail): status, título, timestamp e, quando relevante, provedor/status. O corpo cru do provedor nunca é repassado.'],
+  ['ISO 8601','Formato padrão de data/hora com fuso, ex.: 2026-10-11T14:30:00-03:00. Usado em toda a agenda.'],
+  ['magic bytes','Validação pelos primeiros bytes do arquivo (o conteúdo real), não pela extensão — evita aceitar um .jpg que é outro formato.'],
+  ['multipart/form-data','Formato de envio de arquivos por HTTP. No upload, o campo se chama "arquivo".'],
+  ['transação','Bloco atômico do banco (grava tudo ou nada). Regra do projeto: nenhuma transação aberta durante chamada HTTP.'],
+  ['fora da transação','A chamada ao provedor acontece depois do save, sem transação aberta: evita conexão presa e lock no banco durante os segundos de timeout.'],
+  ['create-drop','Modo do Hibernate que recria as tabelas a cada inicialização. Ótimo em dev, inaceitável em produção.'],
+  ['ddl-auto','Controle do Hibernate sobre o schema. Hoje create-drop (recria tudo no boot); em produção deve ser validate com migrações.'],
+  ['timespan','Evento com hora marcada (início e fim). Único formato suportado hoje.'],
+  ['datespan','Evento de dia inteiro. O Nylas aceita, a API ainda não (pendência de backend).'],
+  ['BigDecimal','Tipo decimal exato — obrigatório para dinheiro: float erraria centavos.'],
+  ['OffsetDateTime','Data/hora com fuso explícito — evita ambiguidade de fuso entre cliente e servidor.'],
+  ['LocalDate','Data sem hora (ex.: data de início da tatuagem).'],
+  ['@ConfigurationProperties','Mecanismo que injeta configurações tipadas. Regra: chaves só entram por aqui ou por variável de ambiente — nunca no código.'],
+  ['429','Resposta do provedor por excesso de requisições. A API traduz para 503 + Retry-After.'],
+  ['Retry-After','Cabeçalho HTTP que diz em quantos segundos tentar de novo.'],
+  ['502','Falha de integração: o provedor respondeu erro. O status cru do provedor não é repassado ao cliente.'],
+  ['504','Timeout: o provedor demorou além do limite configurado (3s conexão / 15-30s leitura).'],
+  ['PENDENTE','Status inicial do contrato: salvo no banco antes de chamar o APITemplate.'],
+  ['GERADO','PDF gerado pelo provedor; pdfUrl e transactionRef preenchidos.'],
+  ['FALHA','O provedor falhou; o contrato fica registrado para reprocessamento.'],
+  ['publicId','Identificador único do arquivo no Cloudinary — por ele a imagem é achada e removida.'],
+  ['transformação por URL','Corte/formato/qualidade definidos na própria URL: editar não exige novo upload.'],
+  ['grant id','Identificador da conta autorizada no Nylas (a agenda do estúdio). Sem ele a API não acessa o calendário.'],
+  ['template id','Identificador do modelo de PDF dentro da conta do APITemplate.'],
+  ['perfil local','Perfil de execução com properties locais e variáveis. É o único onde Swagger e console H2 ligam.'],
+  ['unique','Índice de unicidade: impede dois registros com o mesmo valor (ex.: publicId de imagem).'],
+  ['forkCount','Isolamento dos testes: um processo JVM dedicado — evita estourar a RAM da máquina.'],
+  ['mvnw','Maven Wrapper: baixa e usa a versão certa do Maven sem instalar nada.'],
+  ['ProblemDetail','Classe do Spring que materializa o erro no padrão RFC 7807. É o que o GlobalExceptionHandler devolve em toda resposta de erro.'],
+  ['GlobalExceptionHandler','Ponto único que traduz exceção em resposta HTTP (400/404/502...). Qualquer mudança de tratamento de erro começa aqui.'],
+  ['Mockito','Framework de mock: substitui dependências (ex.: o client do provedor) nos testes de service, sem chamar nada de verdade.'],
+  ['@WebMvcTest','Sobe só a camada web (controller + validação + JSON) nos testes — muito mais rápido que subir o contexto inteiro.'],
+  ['201 + Location','Resposta de criação: 201 (Created) + cabeçalho Location com a URL do recurso recém-criado.'],
+  ['@AssertTrue','Valida uma REGRA entre campos (ex.: fim depois de início), não um campo isolado — falha devolve 400 igual aos outros.'],
+  ['open-in-view=false','Desliga a sessão do JPA durante a renderização: evita query escondida e o clássico LazyInitializationException.'],
+  ['GeneratedValue identity','A chave primária é gerada pelo banco (auto-incremento/sequence), não pela aplicação — importa para capacity e backup.'],
+  ['SecurityHeadersFilter','Filtro que injeta headers de segurança em TODA resposta: X-Content-Type-Options, X-Frame-Options, CSP, Referrer-Policy, Permissions-Policy e HSTS.'],
+  ['X-Content-Type-Options','Obriga o navegador a respeitar o tipo declarado do conteúdo — barra o MIME sniffing (vetor clássico de XSS).'],
+  ['X-Frame-Options','Impede a página de ser exibida em iframe de outro site — proteção contra clickjacking.'],
+  ['CSP','Content Security Policy: diz ao navegador quais origens de script/estilo são permitidas — principal barreira contra XSS.'],
+  ['Referrer-Policy','Controla quanta informação da URL de origem é enviada ao destino de um clique.'],
+  ['Permissions-Policy','Desliga recursos do navegador que a aplicação não usa (câmera, microfone, geolocalização...).'],
+  ['HSTS','Força o navegador a usar HTTPS nas próximas visitas — só faz sentido com TLS terminando no ingress.'],
+  ['8080/8081','Portas onde as aplicações sobem hoje (apis na 8080, sentinela na 8081) — é por onde o proxy/ingress vai falar com elas.'],
+  ['padrão (produção)','É o perfil default, sem properties locais: Swagger e console H2 respondem 404 e os headers de segurança estão presentes.'],
+  ['secret manager','Cofre de segredos (Azure Key Vault, AWS Secrets Manager...): destino futuro das chaves, em vez de arquivo em disco.'],
+  ['sinal pago','Flag do contrato que indica se a entrada (sinal) já foi paga — vem do cliente no POST, não é calculado pelo sistema.'],
+  ['template (APITemplate)','Modelo editável do PDF dentro da conta do APITemplate: os campos do contrato são injetados nesse modelo pelo template id.'],
+  ['fuso horário','A agenda assume America/Sao_Paulo quando não informado; o Nylas guarda tudo em UTC e converte na volta.']
+];
+const DICAS = TERMOS.slice().sort((a, b) => b[0].length - a[0].length);
+const escapaRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+function embrulharTermos(no){
+  const txt = no.nodeValue;
+  const matches = [];
+  for(const t of DICAS){
+    const re = new RegExp('(?<![A-Za-z0-9_])' + escapaRe(t[0]) + '(?![A-Za-z0-9_])', 'g');
+    let m;
+    while((m = re.exec(txt))){
+      const ini = m.index, fim = ini + m[0].length;
+      if(matches.some(x => ini < x.fim && fim > x.ini)) continue;
+      matches.push({ini: ini, fim: fim, dica: t[1]});
+    }
+  }
+  if(!matches.length) return;
+  matches.sort((a, b) => a.ini - b.ini);
+  const frag = document.createDocumentFragment();
+  let pos = 0;
+  for(const mt of matches){
+    if(mt.ini < pos) continue;
+    if(mt.ini > pos) frag.appendChild(document.createTextNode(txt.slice(pos, mt.ini)));
+    const sp = document.createElement('span');
+    sp.className = 'term';
+    sp.textContent = txt.slice(mt.ini, mt.fim);
+    sp.setAttribute('data-tip', mt.dica);
+    sp.tabIndex = 0;
+    frag.appendChild(sp);
+    pos = mt.fim;
+  }
+  if(pos < txt.length) frag.appendChild(document.createTextNode(txt.slice(pos)));
+  no.parentNode.replaceChild(frag, no);
+}
+
+function aplicarDicas(raiz){
+  const skip = {SCRIPT:1, STYLE:1, TEXTAREA:1, INPUT:1, NOSCRIPT:1};
+  const andar = document.createTreeWalker(raiz, NodeFilter.SHOW_TEXT, {
+    acceptNode(n){
+      if(!n.nodeValue || !n.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+      let p = n.parentNode;
+      while(p && p !== raiz){
+        if(skip[p.nodeName]) return NodeFilter.FILTER_REJECT;
+        if(p.classList && (p.classList.contains('term') || p.id === 'dica')) return NodeFilter.FILTER_REJECT;
+        p = p.parentNode;
+      }
+      return NodeFilter.FILTER_ACCEPT;
+    }
+  });
+  const alvos = [];
+  while(andar.nextNode()) alvos.push(andar.currentNode);
+  alvos.forEach(embrulharTermos);
+}
+
+const boxDica = document.createElement('div');
+boxDica.id = 'dica';
+document.body.appendChild(boxDica);
+
+function conteudoDica(el){
+  boxDica.innerHTML = '<b>' + esc(el.textContent) + '</b><br>' + esc(el.getAttribute('data-tip'));
+}
+function posicionarDica(x, y){
+  const r = boxDica.getBoundingClientRect();
+  let px = x + 14, py = y + 18;
+  if(px + r.width > window.innerWidth - 10) px = Math.max(8, x - r.width - 14);
+  if(py + r.height > window.innerHeight - 10) py = Math.max(8, y - r.height - 18);
+  boxDica.style.left = px + 'px';
+  boxDica.style.top = py + 'px';
+}
+document.addEventListener('mousemove', e => {
+  const t = e.target && e.target.closest ? e.target.closest('.term') : null;
+  if(t){ if(boxDica.__el !== t){ boxDica.__el = t; conteudoDica(t); } boxDica.style.display = 'block'; posicionarDica(e.clientX, e.clientY); }
+  else if(boxDica.__el){ boxDica.__el = null; boxDica.style.display = 'none'; }
+});
+document.addEventListener('mouseleave', () => { boxDica.__el = null; boxDica.style.display = 'none'; });
+document.addEventListener('click', e => {
+  const t = e.target && e.target.closest ? e.target.closest('.term') : null;
+  if(t){ const r = t.getBoundingClientRect(); boxDica.__el = t; conteudoDica(t); boxDica.style.display = 'block'; posicionarDica(r.left, r.bottom); }
+  else { boxDica.__el = null; boxDica.style.display = 'none'; }
+});
+document.addEventListener('focusin', e => {
+  const t = e.target && e.target.closest ? e.target.closest('.term') : null;
+  if(t){ const r = t.getBoundingClientRect(); boxDica.__el = t; conteudoDica(t); boxDica.style.display = 'block'; posicionarDica(r.left, r.bottom); }
+});
+document.addEventListener('keydown', e => { if(e.key === 'Escape'){ boxDica.style.display = 'none'; boxDica.__el = null; } });
+
+aplicarDicas(document.body);
+</script>
+</body>
+</html>
