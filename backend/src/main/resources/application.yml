@@ -1,0 +1,33 @@
+spring:
+  application:
+    name: kawz-tattoo-api
+  datasource:
+    url: ${DATABASE_URL:jdbc:h2:mem:kawztattoo;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH}
+    username: ${DATABASE_USERNAME:sa}
+    password: ${DATABASE_PASSWORD:}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: update
+    # schema.sql (view vw_contratos) roda depois do DDL do Hibernate
+    defer-datasource-initialization: true
+    properties:
+      hibernate:
+        format_sql: true
+  jackson:
+    default-property-inclusion: non_null
+  web:
+    resources:
+      add-mappings: false
+
+server:
+  port: ${SERVER_PORT:8080}
+  error:
+    include-message: never
+
+kawz:
+  jwt:
+    # Segredo HMAC de desenvolvimento (mín. 32 bytes). Sobrescreva com JWT_SECRET em produção.
+    segredo: ${JWT_SECRET:kawz-tattoo-dev-secret-troque-em-producao-0123456789abcdef-xyz}
+    validade-minutos: ${JWT_EXPIRA_MINUTOS:480}
+

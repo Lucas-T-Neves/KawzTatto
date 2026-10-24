@@ -1,0 +1,16 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:kawztattoo-test;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1
+    username: sa
+    password:
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: create-drop
+    # schema.sql (view vw_contratos) roda depois do DDL do Hibernate
+    defer-datasource-initialization: true
+
+kawz:
+  jwt:
+    segredo: kawz-tattoo-teste-secret-0123456789abcdef-xyz
+    validade-minutos: 60
