@@ -5,7 +5,9 @@ import com.kawz.tattoo.api.dto.ApiModels.ImagemResponse;
 import com.kawz.tattoo.domain.service.ImagemService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -18,6 +20,13 @@ public class ImagemController {
     @GetMapping("/api/v1/projetos/{projetoId}/imagens")
     public List<ImagemResponse> listarPorProjeto(@PathVariable Integer projetoId) {
         return service.listarPorProjeto(projetoId);
+    }
+
+    /** Upload multipart (campo "arquivo") para o Cloudinary; registra a imagem no projeto. */
+    @PostMapping(path = "/api/v1/projetos/{projetoId}/imagens", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @ResponseStatus(HttpStatus.CREATED)
+    public ImagemResponse enviar(@PathVariable Integer projetoId, @RequestParam("arquivo") MultipartFile arquivo) {
+        return service.enviar(projetoId, arquivo);
     }
 
     @GetMapping("/api/v1/imagens/{id}")

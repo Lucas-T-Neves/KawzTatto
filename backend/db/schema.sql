@@ -30,6 +30,10 @@ CREATE TABLE contrato (
   tolerancia_atraso VARCHAR(45) NULL,
   uso_imagem VARCHAR(45) NULL,
   data_assinatura DATE NULL,
+  status_contrato VARCHAR(45) NULL,
+  pdf_url VARCHAR(1000) NULL,
+  criado_em DATETIME NULL,
+  transaction_ref VARCHAR(100) NULL,
   PRIMARY KEY (id)
 );
 
@@ -60,6 +64,7 @@ CREATE TABLE cliente (
   id INT NOT NULL AUTO_INCREMENT,
   nome VARCHAR(150) NOT NULL,
   telefone VARCHAR(20) NULL,
+  cpf VARCHAR(20) NULL,
   instagram VARCHAR(100) NULL,
   canal_aquisicao VARCHAR(45) NULL,
   link_conversa VARCHAR(255) NULL,
@@ -145,6 +150,7 @@ CREATE TABLE sessao (
   local_atendimento VARCHAR(45) NULL,
   status_sessao VARCHAR(45) NULL,
   observacoes_sessao VARCHAR(45) NULL,
+  evento_calendario_id VARCHAR(100) NULL,
   projeto_id INT NOT NULL,
   PRIMARY KEY (id),
   CONSTRAINT fk_sessao_projeto
@@ -168,11 +174,11 @@ CREATE TABLE imagem (
 CREATE TABLE movimentacao_financeira (
   id INT NOT NULL AUTO_INCREMENT,
   natureza_transacao VARCHAR(45) NULL,
-  categoria VARCHAR(80) NULL,
+  categoria VARCHAR(45) NULL,
   data_ocorrencia DATE NULL,
   valor_monetario DECIMAL(10,2) NULL,
   forma_pagamento VARCHAR(45) NULL,
-  status_pagamento VARCHAR(40) NULL,
+  status_pagamento VARCHAR(45) NULL,
   projeto_id INT NOT NULL,
   PRIMARY KEY (id),
   CONSTRAINT fk_movimentacao_projeto
@@ -187,6 +193,7 @@ SELECT
   c.id                         AS contrato_id,
   cl.nome                      AS nome_cliente,
   cl.telefone                  AS telefone_cliente,
+  cl.cpf                       AS cpf_cliente,
   t.nome                       AS nome_artista,
   p.descricao                  AS descricao_tatuagem,
   cp.localizacao_corpo         AS local_corpo,
@@ -205,7 +212,10 @@ SELECT
   c.limite_alteracoes_arte,
   c.tolerancia_atraso,
   c.uso_imagem,
-  c.data_assinatura
+  c.data_assinatura,
+  c.status_contrato,
+  c.pdf_url,
+  c.transaction_ref
 FROM contrato c
 JOIN projeto p  ON p.contrato_id = c.id
 JOIN tatuador t ON t.id = p.tatuador_id

@@ -26,7 +26,7 @@ public final class ApiMapper {
 
     public static ClienteResponse toResponse(Cliente value) {
         return new ClienteResponse(value.getId(), value.getNome(), value.getTelefone(),
-                value.getInstagram(), value.getCanalAquisicao(), value.getLinkConversa(), value.getLinkPasta(),
+                value.getCpf(), value.getInstagram(), value.getCanalAquisicao(), value.getLinkConversa(), value.getLinkPasta(),
                 value.getStatus(), value.getDataCriacao());
     }
 
@@ -53,7 +53,7 @@ public final class ApiMapper {
     }
 
     public static AtividadeResponse toResponse(Atividade value) {
-        return new AtividadeResponse(value.getId(), value.getTatuador().getId(), value.getDescricao(), value.getTipo());
+        return new AtividadeResponse(value.getId(), value.getTatuador().getId(), value.getDescricao(), value.getTipo(), value.getTitulo(), value.getData(), value.getInicio(), value.getTermino(), value.getLocal(), value.getObservacoes());
     }
 
     public static FollowUpResponse toResponse(FollowUp value) {
@@ -86,14 +86,22 @@ public final class ApiMapper {
 
     public static ContratoResponse toResponse(Contrato value) {
         return new ContratoResponse(value.getId(), value.getLimiteAlteracoesArte(), value.getToleranciaAtraso(),
-                value.getUsoImagem(), value.getDataAssinatura());
+                value.getUsoImagem(), value.getDataAssinatura(),
+                value.getStatusContrato(), value.getCriadoEm(), value.getPdfUrl(), value.getTransactionRef());
+    }
+
+    /** Converte o EXISTS da view (boolean no H2, 0/1 no MySQL) em Boolean. */
+    public static Boolean paraBoolean(Object valor) {
+        if (valor instanceof Boolean b) return b;
+        if (valor instanceof Number n) return n.intValue() != 0;
+        return Boolean.FALSE;
     }
 
     public static ContratoViewResponse toResponse(ContratoViewProjection value) {
         return new ContratoViewResponse(value.getContratoId(), value.getNomeCliente(), value.getTelefoneCliente(),
-                value.getNomeArtista(), value.getDescricaoTatuagem(), value.getLocalCorpo(),
-                value.getDataInicio(), value.getDataFim(), value.getValorOrcado(), value.getSinalPago(),
+                value.getCpfCliente(), value.getNomeArtista(), value.getDescricaoTatuagem(), value.getLocalCorpo(),
+                value.getDataInicio(), value.getDataFim(), value.getValorOrcado(), paraBoolean(value.getSinalPago()),
                 value.getFormaPagamento(), value.getLimiteAlteracoesArte(), value.getToleranciaAtraso(),
-                value.getUsoImagem(), value.getDataAssinatura());
+                value.getUsoImagem(), value.getDataAssinatura(), value.getStatusContrato(), value.getPdfUrl());
     }
 }

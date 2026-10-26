@@ -11,6 +11,7 @@ import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 public final class ApiModels {
     private ApiModels() {}
@@ -29,17 +30,19 @@ public final class ApiModels {
     public record LoginResponse(boolean autenticado, Integer tatuadorId, String nome,
                                 String token, LocalDateTime expiraEm) {}
     public record TatuadorResponse(Integer id, String nome, String email) {}
+    public record ConversaResponse(Integer clienteId, String url, String status) {}
 
     public record ClienteInput(
             @NotBlank @Size(max = 150) String nome,
             @Size(max = 20) String telefone,
+            @Size(max = 20) String cpf,
             @Size(max = 100) String instagram,
             @Size(max = 45) String canalAquisicao,
             @Size(max = 255) String linkConversa,
             @Size(max = 255) String linkPasta,
             @NotBlank @Size(max = 45) String status) {}
 
-    public record ClienteResponse(Integer id, String nome, String telefone, String instagram,
+    public record ClienteResponse(Integer id, String nome, String telefone, String cpf, String instagram,
                                   String canalAquisicao, String linkConversa, String linkPasta,
                                   String status, LocalDateTime dataCriacao) {}
 
@@ -64,6 +67,14 @@ public final class ApiModels {
                                   Integer quantidadeSessoes, LocalDate dataValidade,
                                   Integer contratoId, Integer caracteristicasProjetoId) {}
 
+    public record ProjetoDetalhadoResponse(ProjetoResponse projeto,
+                                           java.util.List<SessaoResponse> sessoes,
+                                           java.util.List<MovimentacaoResponse> movimentacoes,
+                                           java.util.List<FollowUpResponse> followUps,
+                                           java.util.List<ImagemResponse> imagens,
+                                           CaracteristicasProjetoResponse caracteristicas,
+                                           ContratoResponse contrato) {}
+
     public record StatusRequest(@NotBlank @Size(max = 45) String status) {}
 
     public record SessaoInput(
@@ -82,11 +93,11 @@ public final class ApiModels {
             @NotNull Integer projetoId,
             @NotBlank @Size(max = 45) @Pattern(regexp = "ENTRADA|SAIDA",
                     message = "deve ser ENTRADA ou SAIDA") String naturezaTransacao,
-            @NotBlank @Size(max = 80) String categoria,
+            @NotBlank @Size(max = 45) String categoria,
             LocalDate dataOcorrencia,
             @NotNull @DecimalMin("0.00") BigDecimal valorMonetario,
             @Size(max = 45) String formaPagamento,
-            @NotBlank @Size(max = 40) @Pattern(regexp = "pago|pendente",
+            @NotBlank @Size(max = 45) @Pattern(regexp = "pago|pendente",
                     message = "deve ser pago ou pendente") String statusPagamento) {}
 
     public record MovimentacaoResponse(Integer id, Integer projetoId, String naturezaTransacao,
@@ -97,7 +108,7 @@ public final class ApiModels {
                                               BigDecimal saldo, BigDecimal pendencias,
                                               BigDecimal receitasPendentes, BigDecimal despesasPendentes) {}
 
-    public record AtividadeResponse(Integer id, Integer tatuadorId, String descricao, String tipo) {}
+    public record AtividadeResponse(Integer id, Integer tatuadorId, String descricao, String tipo, String titulo, LocalDate data, LocalTime inicio, LocalTime termino, String local, String observacoes) {}
 
     public record FollowUpResponse(Integer id, Integer clienteId, String tipoContato, String statusContato,
                                    LocalDate dataPrevista, LocalDate dataRealizacao,
@@ -147,7 +158,17 @@ public final class ApiModels {
 
     public record AtividadeInput(@NotNull Integer tatuadorId,
                                  @NotBlank @Size(max = 45) String descricao,
-                                 @NotBlank @Size(max = 45) String tipo) {}
+                                 @NotBlank @Size(max = 45) String tipo,
+                                 @Size(max = 120) String titulo,
+                                 LocalDate data,
+                                 LocalTime inicio,
+                                 LocalTime termino,
+                                 @Size(max = 255) String local,
+                                 @Size(max = 2000) String observacoes) {
+        public AtividadeInput(Integer tatuadorId, String descricao, String tipo) {
+            this(tatuadorId, descricao, tipo, descricao, null, null, null, null, null);
+        }
+    }
 
     public record FollowUpInput(@NotNull Integer clienteId,
                                 @NotBlank @Size(max = 45) String tipoContato,
@@ -170,11 +191,23 @@ public final class ApiModels {
     public record AssinaturaInput(LocalDate data) {}
 
     public record ContratoResponse(Integer id, String limiteAlteracoesArte, String toleranciaAtraso,
-                                   String usoImagem, LocalDate dataAssinatura) {}
+                                   String usoImagem, LocalDate dataAssinatura,
+                                   String statusContrato, LocalDateTime criadoEm,
+                                   String pdfUrl, String transactionRef) {}
+
+    /** Dados que não existem no banco e entram no PDF do contrato (todos opcionais). */
+    public record ContratoPdfInput(@Size(max = 20) String cpfCliente,
+                                   @Size(max = 100) String tamanhoEstimado) {}
 
     public record ContratoViewResponse(Integer contratoId, String nomeCliente, String telefoneCliente,
-                                       String nomeArtista, String descricaoTatuagem, String localCorpo,
+                                       String cpfCliente, String nomeArtista, String descricaoTatuagem, String localCorpo,
                                        LocalDate dataInicio, LocalDate dataFim, BigDecimal valorOrcado,
                                        Boolean sinalPago, String formaPagamento, String limiteAlteracoesArte,
-                                       String toleranciaAtraso, String usoImagem, LocalDate dataAssinatura) {}
+                                       String toleranciaAtraso, String usoImagem, LocalDate dataAssinatura,
+                                       String statusContrato, String pdfUrl) {}
+
+    public record DashboardResponse(String mes, long projetosAtivos, long sessoesHoje,
+                                    long followUpsPendentes, BigDecimal receitaMes,
+                                    BigDecimal despesasMes, BigDecimal saldoMes,
+                                    BigDecimal pendenciasMes) {}
 }

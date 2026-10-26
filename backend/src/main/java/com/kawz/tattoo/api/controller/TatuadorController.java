@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import java.security.Principal;
 
 @RestController
 @RequestMapping("/api/v1/tatuadores")
@@ -24,6 +25,9 @@ public class TatuadorController {
 
     @GetMapping("/{id}")
     public TatuadorResponse buscar(@PathVariable Integer id) { return service.buscar(id); }
+
+    @GetMapping("/me")
+    public TatuadorResponse meuPerfil(Principal principal) { return service.buscarPorEmail(principal.getName()); }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)

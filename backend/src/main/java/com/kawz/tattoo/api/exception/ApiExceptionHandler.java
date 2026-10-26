@@ -1,6 +1,7 @@
 package com.kawz.tattoo.api.exception;
 
 import com.kawz.tattoo.domain.exception.BusinessException;
+import com.kawz.tattoo.domain.exception.IntegracaoException;
 import com.kawz.tattoo.domain.exception.ResourceNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -39,6 +40,12 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<ProblemDetail> regraViolada(BusinessException ex, HttpServletRequest request) {
         return responder(HttpStatus.UNPROCESSABLE_ENTITY, "Regra de negócio violada", "regra-violada",
+                ex.getMessage(), request.getRequestURI(), null);
+    }
+
+    @ExceptionHandler(IntegracaoException.class)
+    public ResponseEntity<ProblemDetail> integracao(IntegracaoException ex, HttpServletRequest request) {
+        return responder(HttpStatus.BAD_GATEWAY, "Falha em serviço externo", "servico-externo",
                 ex.getMessage(), request.getRequestURI(), null);
     }
 

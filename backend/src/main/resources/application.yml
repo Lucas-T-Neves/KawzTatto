@@ -8,7 +8,8 @@ spring:
   jpa:
     open-in-view: false
     hibernate:
-      ddl-auto: update
+      # H2: update cria as tabelas. MySQL com db/schema.sql: DDL_AUTO=validate
+      ddl-auto: ${DDL_AUTO:update}
     # schema.sql (view vw_contratos) roda depois do DDL do Hibernate
     defer-datasource-initialization: true
     properties:
@@ -16,6 +17,10 @@ spring:
         format_sql: true
   jackson:
     default-property-inclusion: non_null
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 12MB
   web:
     resources:
       add-mappings: false
@@ -28,6 +33,30 @@ server:
 kawz:
   jwt:
     # Segredo HMAC de desenvolvimento (mín. 32 bytes). Sobrescreva com JWT_SECRET em produção.
-    segredo: ${JWT_SECRET:kawz-tattoo-dev-secret-troque-em-producao-0123456789abcdef-xyz}
+    segredo: ${JWT_SECRET}
     validade-minutos: ${JWT_EXPIRA_MINUTOS:480}
 
+  estudio:
+    nome: ${ESTUDIO_NOME:Kawz Tattoo}
+    documento: ${ESTUDIO_DOCUMENTO:}
+
+# Integrações externas. NUNCA coloque chaves aqui: use variáveis de ambiente.
+# Vazio = integração desligada (Nylas apenas não cria evento; Cloudinary/APITemplate respondem 502).
+apitemplate:
+  base-url: ${APITEMPLATE_BASE_URL:https://rest.apitemplate.io}
+  api-key: ${APITEMPLATE_API_KEY:}
+  template-contrato-id: ${APITEMPLATE_TEMPLATE_ID:}
+
+cloudinary:
+  cloud-name: ${CLOUDINARY_CLOUD_NAME:}
+  api-key: ${CLOUDINARY_API_KEY:}
+  api-secret: ${CLOUDINARY_API_SECRET:}
+  pasta: ${CLOUDINARY_PASTA:kawz-tattoo}
+
+nylas:
+  base-url: ${NYLAS_BASE_URL:https://api.us.nylas.com}
+  api-key: ${NYLAS_API_KEY:}
+  grant-id: ${NYLAS_GRANT_ID:}
+  calendar-id: ${NYLAS_CALENDAR_ID:primary}
+  fuso: ${NYLAS_FUSO:America/Sao_Paulo}
+  duracao-sessao-horas: ${NYLAS_DURACAO_HORAS:3}

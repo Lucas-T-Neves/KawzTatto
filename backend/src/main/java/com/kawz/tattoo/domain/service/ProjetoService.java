@@ -9,9 +9,11 @@ import com.kawz.tattoo.domain.model.Cliente;
 import com.kawz.tattoo.domain.model.Projeto;
 import com.kawz.tattoo.domain.model.Tatuador;
 import com.kawz.tattoo.domain.repository.ClienteRepository;
+import com.kawz.tattoo.domain.repository.ImagemRepository;
 import com.kawz.tattoo.domain.repository.MovimentacaoFinanceiraRepository;
 import com.kawz.tattoo.domain.repository.ProjetoRepository;
 import com.kawz.tattoo.domain.repository.TatuadorRepository;
+import com.kawz.tattoo.integration.CloudinaryClient;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -19,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static com.kawz.tattoo.api.dto.ApiMapper.toResponse;
@@ -31,13 +34,18 @@ public class ProjetoService {
     private final ClienteRepository clientes;
     private final TatuadorRepository tatuadores;
     private final MovimentacaoFinanceiraRepository movimentacoes;
+    private final ImagemRepository imagens;
+    private final CloudinaryClient cloudinary;
 
     public ProjetoService(ProjetoRepository projetos, ClienteRepository clientes, TatuadorRepository tatuadores,
-                          MovimentacaoFinanceiraRepository movimentacoes) {
+                          MovimentacaoFinanceiraRepository movimentacoes, ImagemRepository imagens,
+                          CloudinaryClient cloudinary) {
         this.projetos = projetos;
         this.clientes = clientes;
         this.tatuadores = tatuadores;
         this.movimentacoes = movimentacoes;
+        this.imagens = imagens;
+        this.cloudinary = cloudinary;
     }
 
     private record Resumo(BigDecimal recebido, boolean sinalPago) {}
@@ -59,6 +67,15 @@ public class ProjetoService {
     public ProjetoResponse buscar(Integer id) {
         Resumo resumo = resumo(id);
         return toResponse(obter(id), resumo.recebido(), resumo.sinalPago());
+    }
+
+    @Transactional(readOnly = true)
+    public List<ProjetoResponse> listarPorCliente(Integer clienteId) {
+        return projetos.findByClienteIdOrderByIdDesc(clienteId).stream()
+                .map(projeto -> {
+                    Resumo resumo = resumo(projeto.getId());
+                    return toResponse(projeto, resumo.recebido(), resumo.sinalPago());
+                }).toList();
     }
 
     @Transactional
@@ -91,7 +108,14 @@ public class ProjetoService {
     }
 
     @Transactional
-    public void excluir(Integer id) { projetos.delete(obter(id)); }
+    public void excluir(Integer id) {
+        Projeto projeto = obter(id);
+        // as imagens saem do banco em cascata (ON DELETE CASCADE); aqui limpamos também o Cloudinary
+        List<String> publicIds = imagens.listarPublicIds(id);
+        projetos.delete(projeto);
+        projetos.flush(); // se houver sessões/movimentações, a violação de FK estoura aqui, antes de tocar no Cloudinary
+        publicIds.forEach(cloudinary::remover);
+    }
 
     private Resumo resumo(Integer projetoId) {
         BigDecimal recebido = movimentacoes.somarRecebido(projetoId);

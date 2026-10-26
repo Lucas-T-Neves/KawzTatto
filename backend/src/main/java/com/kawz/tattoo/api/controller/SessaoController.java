@@ -5,6 +5,7 @@ import com.kawz.tattoo.api.dto.ApiModels.SessaoRemarcarInput;
 import com.kawz.tattoo.api.dto.ApiModels.SessaoResponse;
 import com.kawz.tattoo.api.web.Paginacao;
 import com.kawz.tattoo.domain.service.SessaoService;
+import com.kawz.tattoo.domain.exception.BusinessException;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -29,6 +30,16 @@ public class SessaoController {
         Pageable pageable = Paginacao.de(pagina, tamanho);
         if (dataApos != null) return service.listarPorDataApos(dataApos.atStartOfDay(), pageable);
         return projetoId == null ? service.listar(pageable) : service.listarPorProjeto(projetoId, pageable);
+    }
+
+    @GetMapping("/calendario")
+    public Page<SessaoResponse> calendario(@RequestParam LocalDate inicio,
+                                           @RequestParam LocalDate fim,
+                                           @RequestParam(defaultValue = "0") int pagina,
+                                           @RequestParam(defaultValue = "100") int tamanho) {
+        if (fim.isBefore(inicio)) throw new BusinessException("fim não pode ser anterior a inicio");
+        return service.listarPorPeriodo(inicio.atStartOfDay(), fim.plusDays(1).atStartOfDay(),
+                Paginacao.de(pagina, tamanho));
     }
 
     @GetMapping("/{id}")

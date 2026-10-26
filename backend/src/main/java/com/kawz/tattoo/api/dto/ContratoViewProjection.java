@@ -11,16 +11,20 @@ public interface ContratoViewProjection {
     Integer getContratoId();
     String getNomeCliente();
     String getTelefoneCliente();
+    String getCpfCliente();
     String getNomeArtista();
     String getDescricaoTatuagem();
     String getLocalCorpo();
     LocalDate getDataInicio();
     LocalDate getDataFim();
     BigDecimal getValorOrcado();
-    Boolean getSinalPago();
+    /** H2 devolve boolean; MySQL devolve 0/1 (número). Use ApiMapper.paraBoolean. */
+    Object getSinalPago();
     String getFormaPagamento();
     String getLimiteAlteracoesArte();
     String getToleranciaAtraso();
     String getUsoImagem();
     LocalDate getDataAssinatura();
+    String getStatusContrato();
+    String getPdfUrl();
 }

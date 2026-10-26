@@ -3,6 +3,7 @@ package com.kawz.tattoo.api.controller;
 import com.kawz.tattoo.api.dto.ApiModels.AssinaturaInput;
 import com.kawz.tattoo.api.dto.ApiModels.ContratoCreate;
 import com.kawz.tattoo.api.dto.ApiModels.ContratoInput;
+import com.kawz.tattoo.api.dto.ApiModels.ContratoPdfInput;
 import com.kawz.tattoo.api.dto.ApiModels.ContratoResponse;
 import com.kawz.tattoo.api.dto.ApiModels.ContratoViewResponse;
 import com.kawz.tattoo.api.web.Paginacao;
@@ -41,6 +42,13 @@ public class ContratoController {
     @PutMapping("/{id}")
     public ContratoResponse atualizar(@PathVariable Integer id, @Valid @RequestBody ContratoInput input) {
         return service.atualizar(id, input);
+    }
+
+    /** Gera o PDF no APITemplate e grava pdfUrl/transactionRef no contrato. Corpo opcional (cpfCliente, tamanhoEstimado). */
+    @PostMapping("/{id}/pdf")
+    public ContratoResponse gerarPdf(@PathVariable Integer id,
+                                     @Valid @RequestBody(required = false) ContratoPdfInput input) {
+        return service.gerarPdf(id, input);
     }
 
     /** Registra a assinatura (data padrão: hoje quando ausente no corpo). */

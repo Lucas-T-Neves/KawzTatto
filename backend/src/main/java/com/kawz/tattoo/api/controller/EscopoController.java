@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.time.LocalDate;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @RestController
 public class EscopoController {
@@ -22,8 +24,10 @@ public class EscopoController {
     }
 
     @GetMapping("/api/v1/tatuadores/{tatuadorId}/atividades")
-    public List<AtividadeResponse> atividades(@PathVariable Integer tatuadorId) {
-        return atividades.listarPorTatuador(tatuadorId);
+    public List<AtividadeResponse> atividades(@PathVariable Integer tatuadorId,
+                                                @RequestParam(required = false) LocalDate data) {
+        return data == null ? atividades.listarPorTatuador(tatuadorId)
+                : atividades.listarPorTatuadorEData(tatuadorId, data);
     }
 
     @GetMapping("/api/v1/tatuadores/{tatuadorId}/follow-ups")

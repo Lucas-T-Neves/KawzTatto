@@ -21,6 +21,8 @@ public class Cliente extends BaseEntity {
     private String nome;
     @Column(length = 20)
     private String telefone;
+    @Column(length = 20)
+    private String cpf;
     @Column(length = 100)
     private String instagram;
     @Column(name = "canal_aquisicao", length = 45)
@@ -44,9 +46,9 @@ public class Cliente extends BaseEntity {
 
     protected Cliente() {}
 
-    public Cliente(String nome, String telefone, String instagram, String canalAquisicao,
+    public Cliente(String nome, String telefone, String cpf, String instagram, String canalAquisicao,
                    String linkConversa, String linkPasta, String status) {
-        atualizarCadastro(nome, telefone, instagram, canalAquisicao, linkConversa, linkPasta, status);
+        atualizarCadastro(nome, telefone, cpf, instagram, canalAquisicao, linkConversa, linkPasta, status);
         this.anamneses.add(new Anamnese(this, null, null));
         this.preferencias = new PreferenciasCliente();
     }
@@ -56,10 +58,11 @@ public class Cliente extends BaseEntity {
         if (dataCriacao == null) dataCriacao = LocalDateTime.now();
     }
 
-    public void atualizarCadastro(String nome, String telefone, String instagram,
+    public void atualizarCadastro(String nome, String telefone, String cpf, String instagram,
                                   String canalAquisicao, String linkConversa, String linkPasta, String status) {
         this.nome = nome;
         this.telefone = telefone;
+        this.cpf = cpf;
         this.instagram = instagram;
         this.canalAquisicao = canalAquisicao;
         this.linkConversa = linkConversa;
@@ -81,6 +84,7 @@ public class Cliente extends BaseEntity {
 
     public String getNome() { return nome; }
     public String getTelefone() { return telefone; }
+    public String getCpf() { return cpf; }
     public String getInstagram() { return instagram; }
     public String getCanalAquisicao() { return canalAquisicao; }
     public String getLinkConversa() { return linkConversa; }

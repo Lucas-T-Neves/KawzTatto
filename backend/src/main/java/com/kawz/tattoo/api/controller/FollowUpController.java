@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.time.LocalDate;
 
 @RestController
 @RequestMapping("/api/v1/follow-ups")
@@ -17,7 +18,12 @@ public class FollowUpController {
     public FollowUpController(FollowUpService service) { this.service = service; }
 
     @GetMapping
-    public List<FollowUpResponse> listar() { return service.listar(); }
+    public List<FollowUpResponse> listar(
+            @RequestParam(required = false) Integer projetoId,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) LocalDate dataAte) {
+        return service.listarFiltrado(projetoId, status, dataAte);
+    }
 
     @GetMapping("/{id}")
     public FollowUpResponse buscar(@PathVariable Integer id) { return service.buscar(id); }

@@ -1,33 +1,34 @@
-# Kawz Tattoo API — Sprint 2
+# Kawz Tattoo API
 
-Primeira versão do back-end do sistema Kawz Tattoo, desenvolvida com Java 21,
-Spring Boot e Spring Data JPA.
+Backend REST em Java 21, Spring Boot 4.1.1 e Spring Data JPA para gestão do estúdio Kawz Tattoo.
 
-## Entregue nesta sprint
+## Funcionalidades
 
-- estrutura inicial em camadas;
-- mapeamento das entidades do diagrama de classes;
-- banco H2 em memória;
-- CRUD de tatuadores, clientes e projetos;
-- validações básicas e cálculo do saldo do projeto;
-- autenticação inicial por e-mail e senha.
+A API possui autenticação JWT, CRUD de tatuadores, clientes, projetos, atividades, anamneses, follow-ups, preferências, características de projeto, contratos, sessões, movimentações e imagens. Também oferece rotas aninhadas para consulta por cliente, projeto e tatuador, dashboard e documentação OpenAPI.
 
-## Ainda pendente
+## Integrações
 
-Follow-ups, agenda de sessões, contratos, movimentações financeiras, upload de
-imagens, autenticação com token, PostgreSQL e documentação Swagger serão
-desenvolvidos nas próximas sprints.
+- **APITemplate**: geração de PDF por `POST /api/v1/contratos/{id}/pdf`.
+- **Cloudinary**: upload por `POST /api/v1/projetos/{projetoId}/imagens` e remoção por `DELETE /api/v1/imagens/{id}`.
+- **Nylas v3**: criação, atualização e remoção de eventos ao criar ou alterar sessões.
 
-## Executar
+As credenciais são lidas exclusivamente de variáveis de ambiente. Veja `.env.example`. Sem configuração, Nylas permanece inativo; APITemplate e Cloudinary respondem HTTP 502 quando solicitados.
+
+## Execução
+
+É necessário definir `JWT_SECRET` com pelo menos 32 bytes:
 
 ```bash
+export JWT_SECRET='um-segredo-local-com-no-minimo-32-caracteres'
 ./mvnw spring-boot:run
 ```
 
-A API será iniciada em `http://localhost:8080/api/v1`.
-
-Para executar o teste inicial:
+Para testar:
 
 ```bash
 ./mvnw test
 ```
+
+## Banco
+
+O padrão de desenvolvimento usa H2 em memória. Para MySQL, configure `DATABASE_URL`, `DATABASE_USERNAME`, `DATABASE_PASSWORD` e `DDL_AUTO=validate`, e aplique `db/schema.sql` previamente. A validação realizada neste pacote usa H2; a compatibilidade com uma instância MySQL real ainda exige execução nesse ambiente.

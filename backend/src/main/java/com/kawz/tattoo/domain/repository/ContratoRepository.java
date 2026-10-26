@@ -16,6 +16,7 @@ public interface ContratoRepository extends JpaRepository<Contrato, Integer> {
             SELECT v.contrato_id       AS "contratoId",
                    v.nome_cliente      AS "nomeCliente",
                    v.telefone_cliente  AS "telefoneCliente",
+                   v.cpf_cliente       AS "cpfCliente",
                    v.nome_artista      AS "nomeArtista",
                    v.descricao_tatuagem AS "descricaoTatuagem",
                    v.local_corpo       AS "localCorpo",
@@ -27,7 +28,9 @@ public interface ContratoRepository extends JpaRepository<Contrato, Integer> {
                    v.limite_alteracoes_arte AS "limiteAlteracoesArte",
                    v.tolerancia_atraso AS "toleranciaAtraso",
                    v.uso_imagem        AS "usoImagem",
-                   v.data_assinatura   AS "dataAssinatura"
+                   v.data_assinatura   AS "dataAssinatura",
+                   v.status_contrato   AS "statusContrato",
+                   v.pdf_url           AS "pdfUrl"
             FROM vw_contratos v
             ORDER BY v.contrato_id
             """,
@@ -39,6 +42,7 @@ public interface ContratoRepository extends JpaRepository<Contrato, Integer> {
             SELECT v.contrato_id       AS "contratoId",
                    v.nome_cliente      AS "nomeCliente",
                    v.telefone_cliente  AS "telefoneCliente",
+                   v.cpf_cliente       AS "cpfCliente",
                    v.nome_artista      AS "nomeArtista",
                    v.descricao_tatuagem AS "descricaoTatuagem",
                    v.local_corpo       AS "localCorpo",
@@ -50,7 +54,9 @@ public interface ContratoRepository extends JpaRepository<Contrato, Integer> {
                    v.limite_alteracoes_arte AS "limiteAlteracoesArte",
                    v.tolerancia_atraso AS "toleranciaAtraso",
                    v.uso_imagem        AS "usoImagem",
-                   v.data_assinatura   AS "dataAssinatura"
+                   v.data_assinatura   AS "dataAssinatura",
+                   v.status_contrato   AS "statusContrato",
+                   v.pdf_url           AS "pdfUrl"
             FROM vw_contratos v
             WHERE v.contrato_id = :id
             """, nativeQuery = true)

@@ -18,7 +18,7 @@ public class MovimentacaoFinanceira extends BaseEntity {
     private Projeto projeto;
     @Column(name = "natureza_transacao", length = 45)
     private String naturezaTransacao;
-    @Column(length = 80)
+    @Column(length = 45)
     private String categoria;
     @Column(name = "data_ocorrencia")
     private LocalDate dataOcorrencia;
@@ -26,7 +26,7 @@ public class MovimentacaoFinanceira extends BaseEntity {
     private BigDecimal valorMonetario;
     @Column(name = "forma_pagamento", length = 45)
     private String formaPagamento;
-    @Column(name = "status_pagamento", length = 40)
+    @Column(name = "status_pagamento", length = 45)
     private String statusPagamento;
 
     protected MovimentacaoFinanceira() {}

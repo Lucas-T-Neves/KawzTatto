@@ -36,6 +36,13 @@ public class TatuadorService {
     @Transactional(readOnly = true)
     public TatuadorResponse buscar(Integer id) { return toResponse(obter(id)); }
 
+    @Transactional(readOnly = true)
+    public TatuadorResponse buscarPorEmail(String email) {
+        return repository.findByEmailIgnoreCase(email)
+                .map(com.kawz.tattoo.api.dto.ApiMapper::toResponse)
+                .orElseThrow(() -> new ResourceNotFoundException("Tatuador", email));
+    }
+
     @Transactional
     public TatuadorResponse criar(TatuadorCreate input) {
         String email = normalizarEmail(input.email());

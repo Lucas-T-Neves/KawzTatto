@@ -2,6 +2,7 @@ package com.kawz.tattoo.domain.service;
 
 import com.kawz.tattoo.api.dto.ApiModels.ClienteInput;
 import com.kawz.tattoo.api.dto.ApiModels.ClienteResponse;
+import com.kawz.tattoo.api.dto.ApiModels.ConversaResponse;
 import com.kawz.tattoo.domain.exception.ResourceNotFoundException;
 import com.kawz.tattoo.domain.model.Cliente;
 import com.kawz.tattoo.domain.repository.ClienteRepository;
@@ -26,17 +27,25 @@ public class ClienteService {
     @Transactional(readOnly = true)
     public ClienteResponse buscar(Integer id) { return toResponse(obter(id)); }
 
+    @Transactional(readOnly = true)
+    public ConversaResponse conversa(Integer id) {
+        Cliente cliente = obter(id);
+        String url = cliente.getLinkConversa();
+        return new ConversaResponse(id, url,
+                url == null || url.isBlank() ? "NAO_CONFIGURADA" : "LINK_EXISTENTE");
+    }
+
     @Transactional
     public ClienteResponse criar(ClienteInput input) {
         return toResponse(repository.save(new Cliente(input.nome().trim(), input.telefone(),
-                input.instagram(), input.canalAquisicao(), input.linkConversa(), input.linkPasta(),
+                input.cpf(), input.instagram(), input.canalAquisicao(), input.linkConversa(), input.linkPasta(),
                 input.status())));
     }
 
     @Transactional
     public ClienteResponse atualizar(Integer id, ClienteInput input) {
         Cliente cliente = obter(id);
-        cliente.atualizarCadastro(input.nome().trim(), input.telefone(), input.instagram(),
+        cliente.atualizarCadastro(input.nome().trim(), input.telefone(), input.cpf(), input.instagram(),
                 input.canalAquisicao(), input.linkConversa(), input.linkPasta(), input.status());
         return toResponse(cliente);
     }

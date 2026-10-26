@@ -35,7 +35,7 @@ class KawzTattooApplicationTests {
         TatuadorResponse tatuador = tatuadores.criar(
                 new TatuadorCreate("Kawz", "kawz@example.com", "senha-segura"));
         ClienteResponse cliente = clientes.criar(new ClienteInput(
-                "Ana", "11999999999", "@ana", "Instagram",
+                "Ana", "11999999999", "123.456.789-00", "@ana", "Instagram",
                 null, null, "LEAD"));
 
         ProjetoResponse projeto = projetos.criar(new ProjetoInput(

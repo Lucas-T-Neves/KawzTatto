@@ -44,6 +44,28 @@ public class FollowUpService {
     }
 
     @Transactional(readOnly = true)
+    public List<FollowUpResponse> listarFiltrado(Integer projetoId, String status, java.time.LocalDate dataAte) {
+        List<FollowUp> encontrados;
+        if (projetoId != null) encontrados = followUps.findByProjetoId(projetoId);
+        else if (status != null && !status.isBlank()) encontrados = followUps.findByStatusContatoIgnoreCaseOrderByDataPrevistaAsc(status);
+        else if (dataAte != null) encontrados = followUps.findByDataPrevistaLessThanEqualOrderByDataPrevistaAsc(dataAte);
+        else return listar();
+        if (status != null && !status.isBlank() && projetoId != null) {
+            encontrados = encontrados.stream().filter(f -> status.equalsIgnoreCase(f.getStatusContato())).toList();
+        }
+        if (dataAte != null && projetoId != null) {
+            encontrados = encontrados.stream().filter(f -> f.getDataPrevista() != null && !f.getDataPrevista().isAfter(dataAte)).toList();
+        }
+        return encontrados.stream().map(com.kawz.tattoo.api.dto.ApiMapper::toResponse).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<FollowUpResponse> listarPorProjeto(Integer projetoId) {
+        return followUps.findByProjetoId(projetoId).stream()
+                .map(com.kawz.tattoo.api.dto.ApiMapper::toResponse).toList();
+    }
+
+    @Transactional(readOnly = true)
     public FollowUpResponse buscar(Integer id) { return toResponse(obter(id)); }
 
     @Transactional

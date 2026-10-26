@@ -6,6 +6,7 @@ SELECT
   c.id                         AS contrato_id,
   cl.nome                      AS nome_cliente,
   cl.telefone                  AS telefone_cliente,
+  cl.cpf                       AS cpf_cliente,
   t.nome                       AS nome_artista,
   p.descricao                  AS descricao_tatuagem,
   cp.localizacao_corpo         AS local_corpo,
@@ -24,7 +25,10 @@ SELECT
   c.limite_alteracoes_arte,
   c.tolerancia_atraso,
   c.uso_imagem,
-  c.data_assinatura
+  c.data_assinatura,
+  c.status_contrato,
+  c.pdf_url,
+  c.transaction_ref
 FROM contrato c
 JOIN projeto p  ON p.contrato_id = c.id
 JOIN tatuador t ON t.id = p.tatuador_id
