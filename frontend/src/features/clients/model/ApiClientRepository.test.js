@@ -17,9 +17,9 @@ test("clients use the exact paginated API contract and JWT header", async () => 
     assert.equal(calls[0].options.headers.Authorization, "Bearer token-test")
     assert.equal(page.totalPages, 3)
     assert.deepEqual(fromApiClient(page.content[0]), {
-      id: "42", name: "Ana", phone: "", instagram: "", channel: "", chat: "", folder: "",
-      location: "", body: "", size: "", idea: "", music: "", food: "", style: "", budget: "",
-      habits: "", availability: "", notes: "", status: "CLIENTE", created: undefined, source: "api",
+      id: "42", name: "Ana", phone: "", instagram: "", channel: "", folder: "",
+      music: "", food: "", style: "", habits: "", notes: "",
+      status: "CLIENTE", created: undefined, source: "api",
     })
   } finally { globalThis.fetch = original }
 })
@@ -37,14 +37,13 @@ test("client writes send only ClienteInput fields and accept empty DELETE respon
     assert.equal(calls[0].url, "/api/v1/clientes/42")
     assert.equal(calls[0].options.method, "PUT")
     assert.deepEqual(JSON.parse(calls[0].options.body), {
-      nome: "Ana", telefone: null, instagram: null, canalAquisicao: null, linkConversa: null, linkPasta: null,
-      localizacao: null, localizacaoCorpo: null, tamanho: null, ideia: null, musicaFavorita: "local",
-      comidaFavorita: null, estiloTatuagemFavorita: null, faixaOrcamento: null, habitos: null,
-      disponibilidadeHorarios: null, observacoesGerais: "local", status: "CLIENTE",
+      nome: "Ana", telefone: null, instagram: null, canalAquisicao: null, linkPasta: null,
+      musicaFavorita: "local", comidaFavorita: null, estiloTatuagemFavorita: null,
+      habitos: null, observacoesGerais: "local", status: "CLIENTE",
     })
     assert.equal(await repo.remove("42"), null)
     assert.equal(calls[1].options.method, "DELETE")
-    assert.throws(() => toApiClient({ name: "Ana" }), /status/)
+    assert.equal(toApiClient({ name: "Ana" }).status, "Interessado")
   } finally { globalThis.fetch = original }
 })
 

@@ -16,6 +16,7 @@ export default function useConversationViewModel(
   }, [])
   const open = async () => {
     if (busy) return
+    if (!client) return
     setBusy(true)
     try {
       const result = await gateway.openConversation({

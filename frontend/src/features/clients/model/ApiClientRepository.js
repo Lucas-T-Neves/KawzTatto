@@ -4,34 +4,26 @@ import { apiRequest } from "../../../shared/model/http.js"
 export const fromApiClient = (item) => ({
   id: String(item.id), name: item.nome, phone: item.telefone || "",
   instagram: item.instagram || "", channel: item.canalAquisicao || "",
-  chat: item.linkConversa || "", folder: item.linkPasta || "",
-  location: item.localizacao || "", body: item.localizacaoCorpo || "",
-  size: item.tamanho || "", idea: item.ideia || "",
+  folder: item.linkPasta || "",
   music: item.musicaFavorita || "", food: item.comidaFavorita || "",
-  style: item.estiloTatuagemFavorita || "", budget: item.faixaOrcamento || "",
-  habits: item.habitos || "", availability: item.disponibilidadeHorarios || "",
+  style: item.estiloTatuagemFavorita || "",
+  habits: item.habitos || "",
   notes: item.observacoesGerais || "",
   status: item.status, created: item.dataCriacao, source: "api",
 })
 
 export function toApiClient(form) {
-  if (!form.name?.trim() || !form.status?.trim()) throw new Error("Informe nome e status do cliente.")
+  if (!form.name?.trim()) throw new Error("Informe o nome do cliente.")
   return {
     nome: form.name.trim(), telefone: form.phone?.trim() || null,
     instagram: form.instagram?.trim() || null, canalAquisicao: form.channel?.trim() || null,
-    linkConversa: form.chat?.trim() || null, linkPasta: form.folder?.trim() || null,
-    localizacao: form.location?.trim() || null,
-    localizacaoCorpo: form.body?.trim() || null,
-    tamanho: form.size?.trim() || null,
-    ideia: form.idea?.trim() || null,
+    linkPasta: form.folder?.trim() || null,
     musicaFavorita: form.music?.trim() || null,
     comidaFavorita: form.food?.trim() || null,
     estiloTatuagemFavorita: form.style?.trim() || null,
-    faixaOrcamento: form.budget?.trim() || null,
     habitos: form.habits?.trim() || null,
-    disponibilidadeHorarios: form.availability?.trim() || null,
     observacoesGerais: form.notes?.trim() || null,
-    status: form.status.trim(),
+    status: form.status?.trim() || "Interessado",
   }
 }
 

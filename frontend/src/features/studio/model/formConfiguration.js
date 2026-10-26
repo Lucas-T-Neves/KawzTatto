@@ -3,20 +3,13 @@ export const clientPersonalFields = [
   "phone",
   "instagram",
   "channel",
-  "location",
-  "body",
-  "size",
-  "chat",
   "folder",
-  "idea",
 ]
 export const clientPreferenceFields = [
   "music",
   "food",
   "style",
-  "budget",
   "habits",
-  "availability",
   "notes",
 ]
 

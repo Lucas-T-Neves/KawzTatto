@@ -108,6 +108,7 @@ public class MovimentacaoService {
                 input.naturezaTransacao(), input.categoria(), input.dataOcorrencia(),
                 input.valorMonetario(), input.formaPagamento(), input.statusPagamento());
         movimentacao.registrar();
+        atualizarStatusClientePorSinal(movimentacao);
         return toResponse(movimentacoes.save(movimentacao));
     }
 
@@ -117,6 +118,7 @@ public class MovimentacaoService {
         movimentacao.vincularProjeto(obterProjeto(input.projetoId()));
         movimentacao.atualizar(input.naturezaTransacao(), input.categoria(), input.dataOcorrencia(),
                 input.valorMonetario(), input.formaPagamento(), input.statusPagamento());
+        atualizarStatusClientePorSinal(movimentacao);
         return toResponse(movimentacao);
     }
 
@@ -134,6 +136,15 @@ public class MovimentacaoService {
 
     private String normalizar(String valor) {
         return valor == null || valor.isBlank() ? null : valor.trim();
+    }
+
+    private void atualizarStatusClientePorSinal(MovimentacaoFinanceira movimentacao) {
+        boolean sinalPago = "ENTRADA".equalsIgnoreCase(movimentacao.getNaturezaTransacao())
+                && "sinal".equalsIgnoreCase(movimentacao.getCategoria())
+                && "pago".equalsIgnoreCase(movimentacao.getStatusPagamento());
+        if (sinalPago) {
+            movimentacao.getProjeto().getCliente().converterEmCliente();
+        }
     }
 
 }

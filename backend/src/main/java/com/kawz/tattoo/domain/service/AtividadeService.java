@@ -46,8 +46,9 @@ public class AtividadeService {
         Tatuador tatuador = tatuadores.findById(input.tatuadorId())
                 .orElseThrow(() -> new ResourceNotFoundException("Tatuador", input.tatuadorId()));
         validarHorario(input);
-        return toResponse(atividades.save(new Atividade(tatuador, input.descricao(), input.tipo(), input.titulo(),
-                input.data(), input.inicio(), input.termino(), input.local(), input.observacoes())));
+        return toResponse(atividades.save(new Atividade(tatuador, input.projetoId(), input.clienteId(),
+                input.descricao(), input.tipo(), input.status(), input.titulo(), input.data(),
+                input.inicio(), input.termino(), input.local(), input.observacoes())));
     }
 
     @Transactional
@@ -57,8 +58,9 @@ public class AtividadeService {
                 .orElseThrow(() -> new ResourceNotFoundException("Tatuador", input.tatuadorId()));
         validarHorario(input);
         atividade.vincularTatuador(tatuador);
-        atividade.atualizar(input.descricao(), input.tipo(), input.titulo(), input.data(), input.inicio(),
-                input.termino(), input.local(), input.observacoes());
+        atividade.atualizar(input.projetoId(), input.clienteId(), input.descricao(), input.tipo(),
+                input.status(), input.titulo(), input.data(), input.inicio(), input.termino(),
+                input.local(), input.observacoes());
         return toResponse(atividade);
     }
 
@@ -66,8 +68,8 @@ public class AtividadeService {
     public void excluir(Integer id) { atividades.delete(obter(id)); }
 
     private void validarHorario(AtividadeInput input) {
-        if (input.inicio() != null && input.termino() != null && !input.termino().isAfter(input.inicio())) {
-            throw new BusinessException("O horário de término deve ser posterior ao horário de início");
+        if ((input.inicio() == null) != (input.termino() == null)) {
+            throw new BusinessException("Informe início e término juntos, ou deixe ambos vazios");
         }
     }
     private Atividade obter(Integer id) {

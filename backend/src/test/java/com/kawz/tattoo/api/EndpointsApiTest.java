@@ -155,12 +155,15 @@ class EndpointsApiTest {
 
     @Test
     void atividadeComAgendaCompleta() {
-        String base = "\"tatuadorId\":" + auth.tatuadorId() + ",\"descricao\":\"Reuniao\",\"tipo\":\"AGENDA\"";
+        String base = "\"tatuadorId\":" + auth.tatuadorId()
+                + ",\"projetoId\":88,\"clienteId\":99"
+                + ",\"descricao\":\"Reuniao\",\"tipo\":\"AGENDA\",\"status\":\"A confirmar\"";
         R criada = api.post("/api/v1/atividades", "{" + base
                 + ",\"titulo\":\"Alinhamento\",\"data\":\"2030-05-10\",\"inicio\":\"09:00\",\"termino\":\"10:30\""
                 + ",\"local\":\"Estudio\",\"observacoes\":\"Levar projetos\"}", t);
         assertThat(criada.status()).isEqualTo(201);
         assertThat((String) criada.json("$.titulo")).isEqualTo("Alinhamento");
+        assertThat((String) criada.json("$.status")).isEqualTo("A confirmar");
         assertThat((String) criada.json("$.local")).isEqualTo("Estudio");
 
         String url = "/api/v1/tatuadores/" + auth.tatuadorId() + "/atividades?data=";
@@ -169,7 +172,7 @@ class EndpointsApiTest {
 
         assertThat(api.post("/api/v1/atividades", "{" + base
                 + ",\"data\":\"2030-05-10\",\"inicio\":\"10:00\",\"termino\":\"09:00\"}", t).status())
-                .isEqualTo(422);
+                .isEqualTo(201);
     }
 
     // ------------------------------------------------------------------ clientes e filhos
@@ -179,11 +182,13 @@ class EndpointsApiTest {
         // CRUD
         R criado = api.post("/api/v1/clientes",
                 "{\"nome\":\"Ana\",\"telefone\":\"11999999999\",\"cpf\":\"111.222.333-44\",\"status\":\"LEAD\","
-                        + "\"linkConversa\":\"https://wa.me/55119\"}", t);
+                        + "\"linkConversa\":\"https://wa.me/55119\",\"localizacao\":\"Sao Paulo\","
+                        + "\"musicaFavorita\":\"Rock\",\"faixaOrcamento\":\"2000-3000\"}", t);
         assertThat(criado.status()).isEqualTo(201);
         int id = criado.json("$.id");
         String cpfSalvo = criado.json("$.cpf");
         assertThat(cpfSalvo).isEqualTo("111.222.333-44");
+        assertThat((String) criado.json("$.musicaFavorita")).isEqualTo("Rock");
         assertThat(api.post("/api/v1/clientes", "{\"nome\":\"\",\"status\":\"\"}", t).status()).isEqualTo(400);
         assertThat(api.get("/api/v1/clientes/" + id, t).status()).isEqualTo(200);
         assertThat(api.get("/api/v1/clientes/9999999", t).status()).isEqualTo(404);
@@ -192,7 +197,8 @@ class EndpointsApiTest {
         int total = lista.json("$.totalElements");
         assertThat(total).isGreaterThanOrEqualTo(1);
         R atualizado = api.put("/api/v1/clientes/" + id,
-                "{\"nome\":\"Ana Maria\",\"status\":\"CLIENTE\",\"linkConversa\":\"https://wa.me/55119\"}", t);
+                "{\"nome\":\"Ana Maria\",\"status\":\"CLIENTE\",\"linkConversa\":\"https://wa.me/55119\","
+                        + "\"ideia\":\"Floral\",\"observacoesGerais\":\"Cliente calma\"}", t);
         assertThat(atualizado.status()).isEqualTo(200);
         String nome = atualizado.json("$.nome");
         assertThat(nome).isEqualTo("Ana Maria");
@@ -207,10 +213,11 @@ class EndpointsApiTest {
         R pref = api.get("/api/v1/clientes/" + id + "/preferencias", t);
         assertThat(pref.status()).isEqualTo(200);
         R prefAtualizada = api.put("/api/v1/clientes/" + id + "/preferencias",
-                "{\"musicaFavorita\":\"Rock\",\"faixaMediaOrcamento\":1500.00,\"habitos\":\"Noite\"}", t);
+                "{\"musicaFavorita\":\"Rock\",\"faixaMediaOrcamento\":1500.00,\"faixaOrcamento\":\"1500-2500\",\"habitos\":\"Noite\"}", t);
         assertThat(prefAtualizada.status()).isEqualTo(200);
         String musica = prefAtualizada.json("$.musicaFavorita");
         assertThat(musica).isEqualTo("Rock");
+        assertThat((String) prefAtualizada.json("$.faixaOrcamento")).isEqualTo("1500-2500");
 
         // anamneses (1:N)
         R anamnese = api.post("/api/v1/anamneses",
@@ -305,6 +312,58 @@ class EndpointsApiTest {
 
         assertThat(api.delete("/api/v1/projetos/" + id, t).status()).isEqualTo(204);
         assertThat(api.get("/api/v1/projetos/" + id, t).status()).isEqualTo(404);
+    }
+
+    @Test
+    void orcamentosCrudComEscopoPorProjeto() {
+        int clienteId = api.criarCliente(t, "Orc Cliente");
+        int projetoId = api.criarProjeto(t, auth.tatuadorId(), clienteId);
+
+        R criado = api.post("/api/v1/orcamentos", "{"
+                + "\"projetoId\":" + projetoId + ","
+                + "\"clienteId\":" + clienteId + ","
+                + "\"nome\":\"Orçamento inicial\","
+                + "\"status\":\"Rascunho\","
+                + "\"total\":3200.00,"
+                + "\"deposito\":500.00,"
+                + "\"sessoesEstimadas\":4,"
+                + "\"formaPagamento\":\"Pix\","
+                + "\"propostaAceita\":false"
+                + "}", t);
+        assertThat(criado.status()).isEqualTo(201);
+        int id = criado.json("$.id");
+        assertThat((String) criado.json("$.nome")).isEqualTo("Orçamento inicial");
+
+        assertThat(api.get("/api/v1/orcamentos/" + id, t).status()).isEqualTo(200);
+        assertThat(api.get("/api/v1/orcamentos?projetoId=" + projetoId, t).status()).isEqualTo(200);
+        assertThat(api.get("/api/v1/projetos/" + projetoId + "/orcamentos", t).status()).isEqualTo(200);
+
+        R invalido = api.post("/api/v1/orcamentos", "{"
+                + "\"projetoId\":" + projetoId + ","
+                + "\"clienteId\":" + clienteId + ","
+                + "\"status\":\"Rascunho\","
+                + "\"total\":100.00,"
+                + "\"deposito\":200.00,"
+                + "\"sessoesEstimadas\":1"
+                + "}", t);
+        assertThat(invalido.status()).isEqualTo(422);
+
+        R atualizado = api.put("/api/v1/orcamentos/" + id, "{"
+                + "\"projetoId\":" + projetoId + ","
+                + "\"clienteId\":" + clienteId + ","
+                + "\"nome\":\"Orçamento revisado\","
+                + "\"status\":\"Enviado\","
+                + "\"total\":3600.00,"
+                + "\"deposito\":600.00,"
+                + "\"sessoesEstimadas\":4,"
+                + "\"formaPagamento\":\"Cartão\","
+                + "\"propostaAceita\":true"
+                + "}", t);
+        assertThat(atualizado.status()).isEqualTo(200);
+        assertThat((String) atualizado.json("$.status")).isEqualTo("Enviado");
+
+        assertThat(api.delete("/api/v1/orcamentos/" + id, t).status()).isEqualTo(204);
+        assertThat(api.get("/api/v1/orcamentos/" + id, t).status()).isEqualTo(404);
     }
 
     // ------------------------------------------------------------------ sessões + Nylas
@@ -417,6 +476,8 @@ class EndpointsApiTest {
         // validação (regex)
         assertThat(api.post("/api/v1/movimentacoes", "{\"projetoId\":" + projetoId + ",\"naturezaTransacao\":\"XYZ\","
                 + "\"categoria\":\"a\",\"valorMonetario\":1,\"statusPagamento\":\"pago\"}", t).status()).isEqualTo(400);
+        assertThat(api.post("/api/v1/movimentacoes", "{\"projetoId\":" + projetoId + ",\"naturezaTransacao\":\"SAIDA\","
+                + "\"categoria\":\"taxa\",\"valorMonetario\":25,\"statusPagamento\":\"Cancelado\"}", t).status()).isEqualTo(201);
 
         // o sinal pago reflete no projeto
         R projeto = api.get("/api/v1/projetos/" + projetoId, t);
@@ -474,9 +535,14 @@ class EndpointsApiTest {
         assertThat(enviada.status()).isEqualTo(201);
         String publicId = enviada.json("$.publicId");
         String url = enviada.json("$.url");
+        String nomeArquivo = enviada.json("$.nome");
         assertThat(publicId).isEqualTo("kawz-tattoo/projeto-1/abc");
         assertThat(url).isEqualTo("https://res.cloudinary.com/x/abc.png");
+        assertThat(nomeArquivo).isEqualTo("abc");
         int enviadaId = enviada.json("$.id");
+
+        R projetoComRef = api.get("/api/v1/projetos/" + projetoId, t);
+        assertThat((String) projetoComRef.json("$.referenceUrl")).isEqualTo("https://res.cloudinary.com/x/abc.png");
 
         R lista = api.get("/api/v1/projetos/" + projetoId + "/imagens", t);
         int qtd = lista.json("$.length()");

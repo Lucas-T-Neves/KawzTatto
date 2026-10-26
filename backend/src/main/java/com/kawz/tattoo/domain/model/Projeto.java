@@ -23,7 +23,7 @@ public class Projeto extends BaseEntity {
     private Cliente cliente;
     @Column(length = 150)
     private String nome;
-    @Column(length = 45)
+    @Column(length = 10000)
     private String descricao;
     @Column(name = "link_pasta", length = 255)
     private String linkPasta;

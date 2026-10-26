@@ -8,9 +8,11 @@ import {
   visibleFormFields,
 } from "./formConfiguration.js"
 
-test("client data exposes location, size, conversation and idea; observations belong to preferences", () => {
-  for (const key of ["location", "body", "size", "chat", "idea"])
+test("client data keeps personal/contact fields and preference notes", () => {
+  for (const key of ["name", "phone", "instagram", "channel", "folder"])
     assert.ok(clientPersonalFields.includes(key), key)
+  for (const key of ["location", "body", "size", "chat", "idea", "budget", "availability", "status"])
+    assert.ok(!clientPersonalFields.includes(key), key)
   assert.ok(!clientPersonalFields.includes("notes"))
   assert.ok(clientPreferenceFields.includes("notes"))
   assert.deepEqual(

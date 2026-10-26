@@ -6,6 +6,7 @@ import com.kawz.tattoo.api.dto.ApiModels.StatusRequest;
 import com.kawz.tattoo.domain.exception.BusinessException;
 import com.kawz.tattoo.domain.exception.ResourceNotFoundException;
 import com.kawz.tattoo.domain.model.Cliente;
+import com.kawz.tattoo.domain.model.Imagem;
 import com.kawz.tattoo.domain.model.Projeto;
 import com.kawz.tattoo.domain.model.Tatuador;
 import com.kawz.tattoo.domain.repository.ClienteRepository;
@@ -59,14 +60,14 @@ public class ProjetoService {
         }
         return projetos.findAll(pageable).map(projeto -> {
             Resumo resumo = resumos.getOrDefault(projeto.getId(), SEM_MOVIMENTACOES);
-            return toResponse(projeto, resumo.recebido(), resumo.sinalPago());
+            return toResponse(projeto, resumo.recebido(), resumo.sinalPago(), referencia(projeto.getId()));
         });
     }
 
     @Transactional(readOnly = true)
     public ProjetoResponse buscar(Integer id) {
         Resumo resumo = resumo(id);
-        return toResponse(obter(id), resumo.recebido(), resumo.sinalPago());
+        return toResponse(obter(id), resumo.recebido(), resumo.sinalPago(), referencia(id));
     }
 
     @Transactional(readOnly = true)
@@ -74,7 +75,7 @@ public class ProjetoService {
         return projetos.findByClienteIdOrderByIdDesc(clienteId).stream()
                 .map(projeto -> {
                     Resumo resumo = resumo(projeto.getId());
-                    return toResponse(projeto, resumo.recebido(), resumo.sinalPago());
+                    return toResponse(projeto, resumo.recebido(), resumo.sinalPago(), referencia(projeto.getId()));
                 }).toList();
     }
 
@@ -87,7 +88,8 @@ public class ProjetoService {
                 input.lembretePre(), input.lembretePost());
         aplicarCaracteristicas(projeto, input);
         // Projeto novo: nenhuma movimentação possível ainda
-        return toResponse(projetos.save(projeto), BigDecimal.ZERO, false);
+        Projeto salvo = projetos.save(projeto);
+        return toResponse(salvo, BigDecimal.ZERO, false, referencia(salvo.getId()));
     }
 
     @Transactional
@@ -100,7 +102,7 @@ public class ProjetoService {
                 input.lembretePre(), input.lembretePost());
         aplicarCaracteristicas(projeto, input);
         Resumo resumo = resumo(id);
-        return toResponse(projeto, resumo.recebido(), resumo.sinalPago());
+        return toResponse(projeto, resumo.recebido(), resumo.sinalPago(), referencia(id));
     }
 
     @Transactional
@@ -108,7 +110,7 @@ public class ProjetoService {
         Projeto projeto = obter(id);
         projeto.alterarStatus(input.status());
         Resumo resumo = resumo(id);
-        return toResponse(projeto, resumo.recebido(), resumo.sinalPago());
+        return toResponse(projeto, resumo.recebido(), resumo.sinalPago(), referencia(id));
     }
 
     @Transactional
@@ -153,5 +155,9 @@ public class ProjetoService {
 
     private Tatuador obterTatuador(Integer id) {
         return tatuadores.findById(id).orElseThrow(() -> new ResourceNotFoundException("Tatuador", id));
+    }
+
+    private Imagem referencia(Integer projetoId) {
+        return imagens.findFirstByProjetoIdOrderByCriadoEmDesc(projetoId).orElse(null);
     }
 }

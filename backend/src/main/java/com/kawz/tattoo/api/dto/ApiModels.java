@@ -40,17 +40,31 @@ public final class ApiModels {
             @Size(max = 45) String canalAquisicao,
             @Size(max = 255) String linkConversa,
             @Size(max = 255) String linkPasta,
-            @NotBlank @Size(max = 45) String status) {}
+            @Size(max = 120) String localizacao,
+            @Size(max = 45) String tamanho,
+            @Size(max = 10000) String ideia,
+            @Size(max = 120) String musicaFavorita,
+            @Size(max = 120) String comidaFavorita,
+            @Size(max = 120) String estiloTatuagemFavorita,
+            @Size(max = 120) String faixaOrcamento,
+            @Size(max = 255) String habitos,
+            @Size(max = 255) String disponibilidadeHorarios,
+            @Size(max = 10000) String observacoesGerais,
+            @Size(max = 45) String status) {}
 
     public record ClienteResponse(Integer id, String nome, String telefone, String cpf, String instagram,
                                   String canalAquisicao, String linkConversa, String linkPasta,
+                                  String localizacao, String tamanho, String ideia,
+                                  String musicaFavorita, String comidaFavorita, String estiloTatuagemFavorita,
+                                  String faixaOrcamento, String habitos, String disponibilidadeHorarios,
+                                  String observacoesGerais,
                                   String status, LocalDateTime dataCriacao) {}
 
     public record ProjetoInput(
             @NotNull Integer tatuadorId,
             @NotNull Integer clienteId,
             @Size(max = 150) String nome,
-            @NotBlank @Size(max = 45) String descricao,
+            @NotBlank @Size(max = 10000) String descricao,
             @Size(max = 255) String linkPasta,
             @NotBlank @Size(max = 45) String statusProjeto,
             @NotNull @DecimalMin("0.00") BigDecimal valorTotal,
@@ -80,6 +94,7 @@ public final class ApiModels {
                                   String lembretePre, String lembretePost,
                                   String ideiaExpectativa, String estiloArte, String localizacaoCorpo,
                                   String tamanho, String dificuldade, String cores, String complexidade,
+                                  Integer referenceId, String referenceName, String referenceUrl,
                                   Integer contratoId, Integer caracteristicasProjetoId) {}
 
     public record ProjetoDetalhadoResponse(ProjetoResponse projeto,
@@ -112,18 +127,39 @@ public final class ApiModels {
             LocalDate dataOcorrencia,
             @NotNull @DecimalMin("0.00") BigDecimal valorMonetario,
             @Size(max = 45) String formaPagamento,
-            @NotBlank @Size(max = 45) @Pattern(regexp = "pago|pendente",
-                    message = "deve ser pago ou pendente") String statusPagamento) {}
+            @NotBlank @Size(max = 45) @Pattern(regexp = "(?i)pago|pendente|cancelado",
+                    message = "deve ser pago, pendente ou cancelado") String statusPagamento) {}
 
     public record MovimentacaoResponse(Integer id, Integer projetoId, String naturezaTransacao,
                                        String categoria, LocalDate dataOcorrencia, BigDecimal valorMonetario,
                                        String formaPagamento, String statusPagamento) {}
 
     public record MovimentacaoResumoResponse(String mes, BigDecimal receita, BigDecimal despesas,
-                                              BigDecimal saldo, BigDecimal pendencias,
-                                              BigDecimal receitasPendentes, BigDecimal despesasPendentes) {}
+                                               BigDecimal saldo, BigDecimal pendencias,
+                                               BigDecimal receitasPendentes, BigDecimal despesasPendentes) {}
 
-    public record AtividadeResponse(Integer id, Integer tatuadorId, String descricao, String tipo, String titulo, LocalDate data, LocalTime inicio, LocalTime termino, String local, String observacoes) {}
+    public record OrcamentoInput(
+            @NotNull Integer projetoId,
+            @NotNull Integer clienteId,
+            @Size(max = 150) String nome,
+            LocalDate data,
+            @NotBlank @Size(max = 45) String status,
+            @NotNull @DecimalMin("0.00") BigDecimal total,
+            @NotNull @DecimalMin("0.00") BigDecimal deposito,
+            @NotNull @Min(1) Integer sessoesEstimadas,
+            @Size(max = 45) String formaPagamento,
+            LocalDate validade,
+            Boolean propostaAceita) {}
+
+    public record OrcamentoResponse(Integer id, Integer projetoId, Integer clienteId, String nome,
+                                    LocalDate data, String status, BigDecimal total, BigDecimal deposito,
+                                    Integer sessoesEstimadas, BigDecimal valorSessaoEstimado,
+                                    String formaPagamento, LocalDate validade, Boolean propostaAceita) {}
+
+    public record AtividadeResponse(Integer id, Integer tatuadorId, Integer projetoId, Integer clienteId,
+                                    String descricao, String tipo, String status, String titulo,
+                                    LocalDate data, LocalTime inicio, LocalTime termino,
+                                    String local, String observacoes) {}
 
     public record FollowUpResponse(Integer id, Integer clienteId, String tipoContato, String statusContato,
                                    LocalDate dataPrevista, LocalDate dataRealizacao,
@@ -136,17 +172,18 @@ public final class ApiModels {
     public record AnamneseResponse(Integer id, Integer clienteId, String dadosSaude,
                                    String preparacaoTatuagem) {}
 
-    public record PreferenciasClienteInput(@Size(max = 45) String musicaFavorita,
-                                           @Size(max = 45) String comidaFavorita,
-                                           @Size(max = 45) String estiloTatuagemFavorita,
+    public record PreferenciasClienteInput(@Size(max = 120) String musicaFavorita,
+                                           @Size(max = 120) String comidaFavorita,
+                                           @Size(max = 120) String estiloTatuagemFavorita,
                                            @DecimalMin("0.00") BigDecimal faixaMediaOrcamento,
-                                           @Size(max = 45) String habitos,
-                                           @Size(max = 45) String disponibilidadeHorarios,
-                                           @Size(max = 45) String observacoesGerais) {}
+                                           @Size(max = 120) String faixaOrcamento,
+                                           @Size(max = 255) String habitos,
+                                           @Size(max = 255) String disponibilidadeHorarios,
+                                           @Size(max = 10000) String observacoesGerais) {}
 
     public record PreferenciasClienteResponse(Integer id, Integer clienteId, String musicaFavorita,
                                               String comidaFavorita, String estiloTatuagemFavorita,
-                                              BigDecimal faixaMediaOrcamento, String habitos,
+                                              BigDecimal faixaMediaOrcamento, String faixaOrcamento, String habitos,
                                               String disponibilidadeHorarios, String observacoesGerais) {}
 
     public record CaracteristicasProjetoInput(@Size(max = 10000) String ideiaExpectativa,
@@ -169,20 +206,25 @@ public final class ApiModels {
                               Integer larguraAltura) {}
 
     public record ImagemResponse(Integer id, Integer projetoId, String publicId, String url,
+                                 String nome,
                                  String formato, String bytes, Integer larguraAltura,
                                  LocalDateTime criadoEm) {}
 
     public record AtividadeInput(@NotNull Integer tatuadorId,
+                                 Integer projetoId,
+                                 Integer clienteId,
                                  @NotBlank @Size(max = 45) String descricao,
                                  @NotBlank @Size(max = 45) String tipo,
+                                 @Size(max = 45) String status,
                                  @Size(max = 120) String titulo,
                                  LocalDate data,
                                  LocalTime inicio,
-                                 LocalTime termino,
-                                 @Size(max = 255) String local,
-                                 @Size(max = 2000) String observacoes) {
+                                  LocalTime termino,
+                                  @Size(max = 255) String local,
+                                  @Size(max = 2000) String observacoes) {
         public AtividadeInput(Integer tatuadorId, String descricao, String tipo) {
-            this(tatuadorId, descricao, tipo, descricao, null, null, null, null, null);
+            this(tatuadorId, null, null, descricao, tipo, null, descricao,
+                    null, null, null, null, null);
         }
     }
 
