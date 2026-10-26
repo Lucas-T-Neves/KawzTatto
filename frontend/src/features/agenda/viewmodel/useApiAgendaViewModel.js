@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
-import ApiAgendaRepository, { fromApiActivity } from "../model/ApiAgendaRepository.js"
+import ApiAgendaRepository from "../model/ApiAgendaRepository.js"
 
 export default function useApiAgendaViewModel(profile, enabled) {
   const repository = useMemo(() => {
@@ -28,7 +28,7 @@ export default function useApiAgendaViewModel(profile, enabled) {
     repository
       .list(controller.signal)
       .then((items) => {
-        setActivities(items.map(fromApiActivity))
+        setActivities(items)
         setListState("success")
       })
       .catch((failure) => {
@@ -44,7 +44,7 @@ export default function useApiAgendaViewModel(profile, enabled) {
     setSaving(true)
     setError("")
     try {
-      const saved = fromApiActivity(await repository.save(form))
+      const saved = await repository.save(form)
       setActivities((previous) => {
         const exists = previous.some((item) => item.id === saved.id)
         return exists

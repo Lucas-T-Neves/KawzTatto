@@ -499,10 +499,10 @@ export function Workspace({ onExit, profile, page }) {
                     : key === "Agenda" &&
                         item.kind === "Sessão" &&
                       item.projectId &&
-                      !(page === "Projetos" && context)
+                      !((page === "Projetos" || page === "Clientes") && context)
                     ? navigate("Projetos", item.projectId)
                     : setDetail({ ...item, collection: key })
-              }
+               }
             >
               <span className={cssClass("record-content")}>
                 {key === "Orçamentos" ? (
@@ -1785,12 +1785,12 @@ export function Workspace({ onExit, profile, page }) {
               {detail.collection === "Agenda" && detail.kind === "Sessão" && (
                 <Button
                   onClick={() =>
-                    open("Financeiro", undefined, {
-                      projectId: detail.projectId,
-                      clientId: detail.clientId,
-                      sessionId: detail.id,
-                      name: `Pagamento · ${detail.name}`,
-                    })
+                      open("Financeiro", undefined, {
+                        projectId: detail.projectId,
+                        clientId: detail.clientId,
+                        sessionId: detail.sourceId || detail.id,
+                        name: `Pagamento · ${detail.name}`,
+                      })
                   }
                 >
                   Registrar pagamento
