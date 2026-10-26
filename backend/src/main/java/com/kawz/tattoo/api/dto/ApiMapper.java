@@ -31,14 +31,20 @@ public final class ApiMapper {
     }
 
     /**
-     * saldo = valorTotal - recebido (quanto falta receber); recebido e sinalPago
+     * Saldo = valorTotal - recebido (quanto falta receber); recebido e sinalPago
      * vêm das movimentações financeiras do projeto (regra da view vw_contratos).
      */
     public static ProjetoResponse toResponse(Projeto value, BigDecimal recebido, boolean sinalPago) {
+        var caracteristicas = value.getCaracteristicas();
         return new ProjetoResponse(value.getId(), value.getTatuador().getId(), value.getCliente().getId(),
-                value.getDescricao(), value.getStatusProjeto(), value.getValorTotal(), value.getValorSinal(),
+                value.getNome(), value.getDescricao(), value.getLinkPasta(),
+                value.getStatusProjeto(), value.getValorTotal(), value.getValorSinal(),
                 value.calcularSaldo(recebido), recebido, sinalPago, value.getQuantidadeSessoes(),
-                value.getDataValidade(), value.getContrato().getId(), value.getCaracteristicas().getId());
+                value.getDataValidade(), value.getLembretePre(), value.getLembretePost(),
+                caracteristicas.getIdeiaExpectativa(), caracteristicas.getEstiloArte(),
+                caracteristicas.getLocalizacaoCorpo(), caracteristicas.getTamanho(),
+                caracteristicas.getDificuldade(), caracteristicas.getCores(), caracteristicas.getComplexidade(),
+                value.getContrato().getId(), caracteristicas.getId());
     }
 
     public static SessaoResponse toResponse(Sessao value) {
@@ -75,7 +81,7 @@ public final class ApiMapper {
 
     public static CaracteristicasProjetoResponse toResponse(CaracteristicasProjeto value, Integer projetoId) {
         return new CaracteristicasProjetoResponse(value.getId(), projetoId, value.getIdeiaExpectativa(),
-                value.getEstiloArte(), value.getLocalizacaoCorpo(), value.getDificuldade(),
+                value.getEstiloArte(), value.getLocalizacaoCorpo(), value.getTamanho(), value.getDificuldade(),
                 value.getCores(), value.getComplexidade());
     }
 

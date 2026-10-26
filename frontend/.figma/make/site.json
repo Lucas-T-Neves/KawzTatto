@@ -1,0 +1,10 @@
+{
+  "description": "Create and manage a collaborative website effortlessly using intuitive markdown instructions, designed for teams and individuals seeking streamlined content development.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}

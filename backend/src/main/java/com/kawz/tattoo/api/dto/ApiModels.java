@@ -49,22 +49,37 @@ public final class ApiModels {
     public record ProjetoInput(
             @NotNull Integer tatuadorId,
             @NotNull Integer clienteId,
+            @Size(max = 150) String nome,
             @NotBlank @Size(max = 45) String descricao,
+            @Size(max = 255) String linkPasta,
             @NotBlank @Size(max = 45) String statusProjeto,
             @NotNull @DecimalMin("0.00") BigDecimal valorTotal,
             @NotNull @DecimalMin("0.00") BigDecimal valorSinal,
             @NotNull @Min(1) Integer quantidadeSessoes,
-            LocalDate dataValidade) {}
+            LocalDate dataValidade,
+            @Size(max = 45) String lembretePre,
+            @Size(max = 45) String lembretePost,
+            @Size(max = 10000) String ideiaExpectativa,
+            @Size(max = 45) String estiloArte,
+            @Size(max = 45) String localizacaoCorpo,
+            @Size(max = 45) String tamanho,
+            @Size(max = 45) String dificuldade,
+            @Size(max = 45) String cores,
+            @Size(max = 45) String complexidade) {}
 
     /**
-     * saldo = valorTotal - recebido (quanto falta receber).
-     * recebido = soma das movimentações de ENTRADA com status "pago";
-     * sinalPago = existe movimentação de sinal paga — mesma regra da view vw_contratos.
+     * Saldo = valorTotal - recebido (quanto falta receber).
+     * Recebido = soma das movimentações de ENTRADA com status "pago";
+     * SinalPago = existe movimentação de sinal paga — mesma regra da view vw_contratos.
      */
-    public record ProjetoResponse(Integer id, Integer tatuadorId, Integer clienteId, String descricao,
+    public record ProjetoResponse(Integer id, Integer tatuadorId, Integer clienteId, String nome, String descricao,
+                                  String linkPasta,
                                   String statusProjeto, BigDecimal valorTotal, BigDecimal valorSinal,
                                   BigDecimal saldo, BigDecimal recebido, Boolean sinalPago,
                                   Integer quantidadeSessoes, LocalDate dataValidade,
+                                  String lembretePre, String lembretePost,
+                                  String ideiaExpectativa, String estiloArte, String localizacaoCorpo,
+                                  String tamanho, String dificuldade, String cores, String complexidade,
                                   Integer contratoId, Integer caracteristicasProjetoId) {}
 
     public record ProjetoDetalhadoResponse(ProjetoResponse projeto,
@@ -137,12 +152,13 @@ public final class ApiModels {
     public record CaracteristicasProjetoInput(@Size(max = 10000) String ideiaExpectativa,
                                               @Size(max = 45) String estiloArte,
                                               @Size(max = 45) String localizacaoCorpo,
+                                              @Size(max = 45) String tamanho,
                                               @Size(max = 45) String dificuldade,
                                               @Size(max = 45) String cores,
                                               @Size(max = 45) String complexidade) {}
 
     public record CaracteristicasProjetoResponse(Integer id, Integer projetoId, String ideiaExpectativa,
-                                                 String estiloArte, String localizacaoCorpo,
+                                                 String estiloArte, String localizacaoCorpo, String tamanho,
                                                  String dificuldade, String cores, String complexidade) {}
 
     public record ImagemInput(@NotNull Integer projetoId,

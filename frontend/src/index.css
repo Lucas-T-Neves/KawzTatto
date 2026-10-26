@@ -1,0 +1,117 @@
+@import 'tailwindcss';
+
+:root, :root.dark {
+  --font-sans: "Instrument Sans", system-ui, sans-serif;
+  --font-display: var(--font-sans);
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --leading-tight: 1.25;
+  --leading-normal: 1.5;
+  --tracking-wider: .05em;
+  --tracking-widest: .1em;
+  --space-xs: 4px;
+  --space-sm: 6px;
+  --space-md: 8px;
+  --space-lg: 12px;
+  --space-xl: 16px;
+  --space-2xl: 24px;
+  --corner-sm: 4px;
+  --corner-md: 8px;
+  --corner-lg: 16px;
+  --corner-full: 999px;
+  --success: #47fc74;
+  --warning: #f8d33f;
+  --danger: #cf2828;
+  --color-blue-700: oklch(48.8% .243 264.376);
+  --modal-scrim: #000000bf;
+  --control-height: calc(var(--space-2xl) + var(--space-xl));
+  --control-small-height: calc(var(--space-2xl) + var(--space-md));
+  --control-border-width: calc(var(--space-xs) / 4);
+  --font-size-reduction: 2px;
+  --text-xs: calc(12px - var(--font-size-reduction));
+  --text-sm: calc(14px - var(--font-size-reduction));
+  --text-base: calc(16px - var(--font-size-reduction));
+  --text-lg: calc(18px - var(--font-size-reduction));
+  --text-xl: calc(20px - var(--font-size-reduction));
+  --text-2xl: calc(24px - var(--font-size-reduction));
+  --text-heading: var(--text-xl);
+  --month-event-height: calc(var(--text-xs) * 1.25 + var(--space-xs) * 2);
+  --cor-destaque: #D9381E;
+  --cor-fundo: #262522;
+  --cor-texto-principal: #F0DCC9;
+  --cor-borda: #B9A38E;
+  --cor-suporte: #B89671;
+  --cor-card: #734D2C;
+  --brand-primary: var(--cor-destaque);
+  --brand-hover: #8C2020;
+  --brand-tertiary: var(--cor-fundo);
+  --surface-bg: color-mix(in srgb, var(--cor-card) 18%, var(--cor-fundo));
+  --surface-secondary-bg: var(--surface-bg);
+  --surface-dark: var(--cor-fundo);
+  --input-bg: var(--cor-fundo);
+  --text-primary: var(--cor-texto-principal);
+  --text-secondary: var(--cor-borda);
+  --text-tertiary: var(--cor-suporte);
+  --border-primary: color-mix(in srgb, var(--cor-borda) 24%, transparent);
+  --border-secondary: var(--border-primary);
+  --on-brand: var(--cor-texto-principal);
+  --glass-bg: color-mix(in srgb, var(--surface-bg) 86%, transparent);
+  --glass-highlight: color-mix(in srgb, var(--cor-texto-principal) 7%, transparent);
+  --glass-edge: color-mix(in srgb, var(--cor-borda) 20%, transparent);
+  --glass-blur: var(--space-2xl);
+  --glass-shadow: 0 var(--space-lg) calc(var(--space-2xl) * 2) color-mix(in srgb, var(--cor-fundo) 45%, transparent);
+  --client-action-size: 33px;
+  --client-action-icon-size: 22px;
+  --add-action-size: calc(var(--space-xl) + var(--space-lg));
+  --add-action-icon-size: calc(var(--space-xl) + var(--space-xs));
+  --signout-height: calc(var(--space-2xl) + var(--space-lg));
+  --calendar-filter-size: 28px;
+  --calendar-filter-icon-size: 16px;
+  --calendar-view-switch-width: 209px;
+  --calendar-view-switch-height: 32px;
+  --calendar-period-step-size: 33px;
+  --status-positive-text: color-mix(in srgb, var(--success) 65%, var(--text-primary));
+  --status-negative-text: color-mix(in srgb, var(--danger) 60%, var(--text-primary));
+  --status-pending-text: color-mix(in srgb, var(--warning) 65%, var(--text-primary));
+  --status-positive-bg: color-mix(in srgb, var(--success) 10%, var(--input-bg));
+  --status-negative-bg: color-mix(in srgb, var(--danger) 12%, var(--input-bg));
+  --status-pending-bg: color-mix(in srgb, var(--warning) 10%, var(--input-bg));
+  --finance-chart-income: color-mix(in srgb, var(--color-blue-700) 70%, var(--text-primary));
+  --finance-chart-expense: var(--status-positive-text);
+  --finance-chart-grid: var(--border-primary);
+}
+body { background: var(--cor-fundo); color: var(--text-primary); font-family: var(--font-sans); font-size:var(--text-base); }
+.text-label-sm, .text-input-sm { font-size:var(--text-sm); }
+.text-label, .text-input { font-size:var(--text-base); }
+.text-heading, .text-caption { font-size:var(--text-xl); }
+.text-title { font-size:var(--text-2xl); }
+.text-video-title { font-size:var(--text-xs); }
+.text-text-secondary { color:var(--text-secondary); }
+main { padding:calc(var(--space-2xl) * 2); max-width:calc(var(--space-2xl) * 58); margin:auto; }
+@media(max-width:1024px) { main { padding:var(--space-2xl); } }
+@media print { body * { visibility:hidden; } }
+
+/* Application layout and interaction tokens remain editable at the theme boundary. */
+:root, :root.dark {
+  --surface-hover: color-mix(in srgb, var(--cor-card) 42%, var(--cor-fundo));
+  --bg-hover: var(--surface-hover);
+  --bg-faint: var(--input-bg);
+  --bg-subtle: var(--input-bg);
+  --border-selected: var(--cor-suporte);
+  --scroll-track: var(--cor-fundo);
+  --scroll-thumb: color-mix(in srgb, var(--cor-card) 38%, var(--cor-fundo));
+  --scroll-thumb-hover: color-mix(in srgb, var(--cor-card) 65%, var(--cor-fundo));
+  --calendar-hour-height: calc(var(--space-2xl) * 3.5);
+}
+html, body, #root { height:100%; overflow:hidden; }
+body, button, input, textarea, select { font-family:var(--font-sans); }
+* { scrollbar-width:thin; scrollbar-color:transparent transparent; }
+*.is-scrolling { scrollbar-color:var(--scroll-thumb) transparent; }
+::-webkit-scrollbar { width:var(--space-md); height:var(--space-md); }
+::-webkit-scrollbar-button { display:none; width:0; height:0; }
+::-webkit-scrollbar-track { background:transparent; border-radius:var(--corner-full); }
+::-webkit-scrollbar-thumb { background:transparent; border-radius:var(--corner-full); }
+.is-scrolling::-webkit-scrollbar-thumb { background:var(--scroll-thumb); }
+.is-scrolling::-webkit-scrollbar-thumb:hover { background:var(--scroll-thumb-hover); }
+input[type="date"], input[type="time"], input[type="month"] { color-scheme:dark; accent-color:var(--cor-suporte); }

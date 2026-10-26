@@ -21,8 +21,12 @@ public class Projeto extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "cliente_id", nullable = false)
     private Cliente cliente;
+    @Column(length = 150)
+    private String nome;
     @Column(length = 45)
     private String descricao;
+    @Column(name = "link_pasta", length = 255)
+    private String linkPasta;
     @Column(name = "status_projeto", length = 45)
     private String statusProjeto;
     @Column(name = "valor_total", precision = 10, scale = 2)
@@ -33,6 +37,10 @@ public class Projeto extends BaseEntity {
     private Integer quantidadeSessoes;
     @Column(name = "data_validade")
     private LocalDate dataValidade;
+    @Column(name = "lembrete_pre", length = 45)
+    private String lembretePre;
+    @Column(name = "lembrete_post", length = 45)
+    private String lembretePost;
 
     // FKs do lado do projeto, conforme o script: contrato_id e
     // caracteristicas_projeto_id ambos NOT NULL + UNIQUE em projeto
@@ -45,23 +53,31 @@ public class Projeto extends BaseEntity {
 
     protected Projeto() {}
 
-    public Projeto(Tatuador tatuador, Cliente cliente, String descricao, String statusProjeto,
-                   BigDecimal valorTotal, BigDecimal valorSinal, Integer quantidadeSessoes, LocalDate dataValidade) {
+    public Projeto(Tatuador tatuador, Cliente cliente, String nome, String descricao, String linkPasta,
+                   String statusProjeto, BigDecimal valorTotal, BigDecimal valorSinal,
+                   Integer quantidadeSessoes, LocalDate dataValidade, String lembretePre, String lembretePost) {
         this.tatuador = tatuador;
         this.cliente = cliente;
-        atualizar(descricao, statusProjeto, valorTotal, valorSinal, quantidadeSessoes, dataValidade);
+        atualizar(nome, descricao, linkPasta, statusProjeto, valorTotal, valorSinal,
+                quantidadeSessoes, dataValidade, lembretePre, lembretePost);
         this.contrato = new Contrato();
         this.caracteristicas = new CaracteristicasProjeto();
     }
 
-    public void atualizar(String descricao, String statusProjeto, BigDecimal valorTotal, BigDecimal valorSinal,
-                          Integer quantidadeSessoes, LocalDate dataValidade) {
+    public void atualizar(String nome, String descricao, String linkPasta, String statusProjeto,
+                          BigDecimal valorTotal, BigDecimal valorSinal,
+                          Integer quantidadeSessoes, LocalDate dataValidade,
+                          String lembretePre, String lembretePost) {
+        this.nome = nome;
         this.descricao = descricao;
+        this.linkPasta = linkPasta;
         this.statusProjeto = statusProjeto;
         this.valorTotal = valorTotal;
         this.valorSinal = valorSinal;
         this.quantidadeSessoes = quantidadeSessoes;
         this.dataValidade = dataValidade;
+        this.lembretePre = lembretePre;
+        this.lembretePost = lembretePost;
     }
 
     /**
@@ -82,12 +98,16 @@ public class Projeto extends BaseEntity {
 
     public Tatuador getTatuador() { return tatuador; }
     public Cliente getCliente() { return cliente; }
+    public String getNome() { return nome; }
     public String getDescricao() { return descricao; }
+    public String getLinkPasta() { return linkPasta; }
     public String getStatusProjeto() { return statusProjeto; }
     public BigDecimal getValorTotal() { return valorTotal; }
     public BigDecimal getValorSinal() { return valorSinal; }
     public Integer getQuantidadeSessoes() { return quantidadeSessoes; }
     public LocalDate getDataValidade() { return dataValidade; }
+    public String getLembretePre() { return lembretePre; }
+    public String getLembretePost() { return lembretePost; }
     public Contrato getContrato() { return contrato; }
     public CaracteristicasProjeto getCaracteristicas() { return caracteristicas; }
 }

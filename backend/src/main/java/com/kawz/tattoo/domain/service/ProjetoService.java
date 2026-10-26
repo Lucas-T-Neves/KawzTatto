@@ -82,8 +82,10 @@ public class ProjetoService {
     public ProjetoResponse criar(ProjetoInput input) {
         validarValores(input);
         Projeto projeto = new Projeto(obterTatuador(input.tatuadorId()), obterCliente(input.clienteId()),
-                input.descricao(), input.statusProjeto(), input.valorTotal(), input.valorSinal(),
-                input.quantidadeSessoes(), input.dataValidade());
+                nomeProjeto(input), input.descricao(), input.linkPasta(), input.statusProjeto(),
+                input.valorTotal(), input.valorSinal(), input.quantidadeSessoes(), input.dataValidade(),
+                input.lembretePre(), input.lembretePost());
+        aplicarCaracteristicas(projeto, input);
         // Projeto novo: nenhuma movimentação possível ainda
         return toResponse(projetos.save(projeto), BigDecimal.ZERO, false);
     }
@@ -93,8 +95,10 @@ public class ProjetoService {
         validarValores(input);
         Projeto projeto = obter(id);
         projeto.vincular(obterTatuador(input.tatuadorId()), obterCliente(input.clienteId()));
-        projeto.atualizar(input.descricao(), input.statusProjeto(), input.valorTotal(), input.valorSinal(),
-                input.quantidadeSessoes(), input.dataValidade());
+        projeto.atualizar(nomeProjeto(input), input.descricao(), input.linkPasta(), input.statusProjeto(),
+                input.valorTotal(), input.valorSinal(), input.quantidadeSessoes(), input.dataValidade(),
+                input.lembretePre(), input.lembretePost());
+        aplicarCaracteristicas(projeto, input);
         Resumo resumo = resumo(id);
         return toResponse(projeto, resumo.recebido(), resumo.sinalPago());
     }
@@ -128,6 +132,15 @@ public class ProjetoService {
         if (input.valorSinal().compareTo(input.valorTotal()) > 0) {
             throw new BusinessException("O sinal não pode ser maior que o valor total");
         }
+    }
+
+    private void aplicarCaracteristicas(Projeto projeto, ProjetoInput input) {
+        projeto.getCaracteristicas().atualizarCaracteristicas(input.ideiaExpectativa(), input.estiloArte(),
+                input.localizacaoCorpo(), input.tamanho(), input.dificuldade(), input.cores(), input.complexidade());
+    }
+
+    private String nomeProjeto(ProjetoInput input) {
+        return input.nome() == null || input.nome().isBlank() ? input.descricao() : input.nome().trim();
     }
 
     private Projeto obter(Integer id) {
