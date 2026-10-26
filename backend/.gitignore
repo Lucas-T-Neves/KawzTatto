@@ -6,3 +6,8 @@ target/
 .env
 .DS_Store
 .git-local/
+
+# Segredos locais (nunca versionar)
+.env.*
+!.env.example
+application-local.*

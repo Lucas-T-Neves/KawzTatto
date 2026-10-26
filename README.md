@@ -1,6 +1,6 @@
-# KawzTatto
+# Kawz Tattoo
 
-Backend REST do projeto KawzTatto para gestão de clientes, projetos e agenda de um estúdio de tatuagem.
+Backend REST do projeto Kawz Tattoo para gestão de clientes, projetos e agenda de um estúdio de tatuagem.
 
 ## Stack
 
@@ -80,6 +80,10 @@ GET    /api/v1/clientes/{id}
 PUT    /api/v1/clientes/{id}
 DELETE /api/v1/clientes/{id}
 GET    /api/v1/clientes/{clienteId}/anamneses
+GET    /api/v1/anamneses/{id}
+POST   /api/v1/anamneses
+PUT    /api/v1/anamneses/{id}
+DELETE /api/v1/anamneses/{id}
 GET    /api/v1/clientes/{clienteId}/preferencias
 PUT    /api/v1/clientes/{clienteId}/preferencias
 GET    /api/v1/clientes/{clienteId}/projetos
@@ -101,6 +105,9 @@ GET    /api/v1/projetos/{projetoId}/detalhado
 GET    /api/v1/projetos/{projetoId}/caracteristicas
 PUT    /api/v1/projetos/{projetoId}/caracteristicas
 GET    /api/v1/projetos/{projetoId}/contrato
+GET    /api/v1/projetos/{projetoId}/sessoes
+GET    /api/v1/projetos/{projetoId}/follow-ups
+GET    /api/v1/projetos/{projetoId}/movimentacoes/{id}
 GET    /api/v1/contratos
 GET    /api/v1/contratos/{id}
 POST   /api/v1/contratos
@@ -124,6 +131,7 @@ PUT    /api/v1/sessoes/{id}
 PATCH  /api/v1/sessoes/{id}/remarcar
 DELETE /api/v1/sessoes/{id}
 GET    /api/v1/sessoes/calendario
+GET    /api/v1/tatuadores/{tatuadorId}/follow-ups
 GET    /api/v1/follow-ups
 POST   /api/v1/follow-ups
 GET    /api/v1/follow-ups/{id}
@@ -254,6 +262,14 @@ http://localhost:8080/swagger-ui.html
 http://localhost:8080/v3/api-docs
 ```
 
+## Banco e DER
+
+O `db/schema.sql` segue o DER. Acréscimos fora do DER: `sessao.evento_calendario_id` (usada pelo Nylas) e as colunas `titulo`, `data_atividade`, `hora_inicio`, `hora_termino`, `local` e `observacoes` em `atividade` (agenda do frontend).
+
+## Segurança e arquivos locais
+
+`JWT_SECRET` é obrigatória (mínimo de 32 caracteres). Chaves das integrações vêm só de variáveis de ambiente; use o `.env.example` como modelo. O `.gitignore` deve ficar na raiz do repositório e ignora `.env`, `.env.*` (exceto `.env.example`) e `application-local.*`.
+
 ## Testes
 
 Execute a suíte completa com compilação limpa:
@@ -265,7 +281,7 @@ Execute a suíte completa com compilação limpa:
 Estado validado da versão atual:
 
 ```text
-32 testes executados
+33 testes executados (rode para confirmar)
 0 falhas
 0 erros
 BUILD SUCCESS
@@ -279,21 +295,18 @@ Os erros seguem `ProblemDetail` e devem ser tratados pelo frontend pelos código
 
 - `400`: payload ou formato inválido;
 - `401`: token ausente, inválido ou expirado;
-- `404`: recurso não encontrado ou fora do escopo permitido;
+- `404`: recurso não encontrado;
 - `422`: regra de negócio violada;
 - `502`: integração externa indisponível ou sem configuração.
 
 Uma resposta vazia com HTTP `200` representa uma consulta válida sem registros. O frontend não deve tratar lista vazia como erro de autenticação ou falha de rede.
 
-## Isolamento por conta
+## Autenticação e escopo
 
-O objetivo do backend é impedir que um tatuador consulte ou altere dados pertencentes a outra conta. O token JWT identifica o tatuador autenticado e os recursos relacionados devem ser filtrados por esse vínculo.
-
-O isolamento de clientes foi definido como requisito funcional. Os próximos testes obrigatórios devem confirmar o mesmo comportamento para projetos, atividades, follow-ups, sessões, movimentações e imagens, garantindo que um ID de outra conta resulte em `404`.
+Fora do escopo atual: não há isolamento de dados por conta. Qualquer tatuador autenticado acessa todos os recursos; o JWT só é usado para proteger as rotas e em `/api/v1/tatuadores/me`.
 
 ## Pendências antes da produção
 
-- Validar o isolamento por tatuador em todos os recursos relacionados, não apenas em clientes.
 - Executar migração controlada no MySQL real.
 - Testar APITemplate, Cloudinary e Nylas com credenciais reais de ambiente.
 - Confirmar com o frontend os nomes e tipos dos DTOs de projeto, financeiro, preferências, agenda e imagens.

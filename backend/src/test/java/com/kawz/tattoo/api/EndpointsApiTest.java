@@ -153,6 +153,25 @@ class EndpointsApiTest {
         assertThat(api.get("/api/v1/atividades/" + id, t).status()).isEqualTo(404);
     }
 
+    @Test
+    void atividadeComAgendaCompleta() {
+        String base = "\"tatuadorId\":" + auth.tatuadorId() + ",\"descricao\":\"Reuniao\",\"tipo\":\"AGENDA\"";
+        R criada = api.post("/api/v1/atividades", "{" + base
+                + ",\"titulo\":\"Alinhamento\",\"data\":\"2030-05-10\",\"inicio\":\"09:00\",\"termino\":\"10:30\""
+                + ",\"local\":\"Estudio\",\"observacoes\":\"Levar projetos\"}", t);
+        assertThat(criada.status()).isEqualTo(201);
+        assertThat((String) criada.json("$.titulo")).isEqualTo("Alinhamento");
+        assertThat((String) criada.json("$.local")).isEqualTo("Estudio");
+
+        String url = "/api/v1/tatuadores/" + auth.tatuadorId() + "/atividades?data=";
+        assertThat((int) api.get(url + "2030-05-10", t).json("$.length()")).isEqualTo(1);
+        assertThat((int) api.get(url + "2030-05-11", t).json("$.length()")).isEqualTo(0);
+
+        assertThat(api.post("/api/v1/atividades", "{" + base
+                + ",\"data\":\"2030-05-10\",\"inicio\":\"10:00\",\"termino\":\"09:00\"}", t).status())
+                .isEqualTo(422);
+    }
+
     // ------------------------------------------------------------------ clientes e filhos
 
     @Test

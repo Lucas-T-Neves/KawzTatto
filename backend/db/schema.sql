@@ -89,10 +89,18 @@ CREATE TABLE anamnese (
     FOREIGN KEY (cliente_id) REFERENCES cliente (id)
 );
 
+-- Colunas titulo..observacoes (agenda do frontend) sao ACRESCIMO ao DER: o DER define so
+-- descricao, tipo e tatuador_id.
 CREATE TABLE atividade (
   id INT NOT NULL AUTO_INCREMENT,
   descricao VARCHAR(45) NULL,
   tipo VARCHAR(45) NULL,
+  titulo VARCHAR(120) NULL,
+  data_atividade DATE NULL,
+  hora_inicio TIME NULL,
+  hora_termino TIME NULL,
+  local VARCHAR(255) NULL,
+  observacoes VARCHAR(2000) NULL,
   tatuador_id INT NOT NULL,
   PRIMARY KEY (id),
   CONSTRAINT fk_atividade_tatuador
