@@ -28,7 +28,7 @@ public class PreferenciasClienteService {
         Cliente cliente = obterCliente(clienteId);
         PreferenciasCliente preferencias = cliente.getPreferencias();
         preferencias.atualizarPreferencias(input.musicaFavorita(), input.comidaFavorita(),
-                input.estiloTatuagemFavorita(), input.faixaMediaOrcamento(), input.habitos(),
+                input.estiloTatuagemFavorita(), input.faixaMediaOrcamento(), input.faixaOrcamento(), input.habitos(),
                 input.disponibilidadeHorarios(), input.observacoesGerais());
         return toResponse(preferencias, clienteId);
     }

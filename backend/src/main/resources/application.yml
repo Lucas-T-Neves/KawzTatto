@@ -33,7 +33,7 @@ server:
 kawz:
   jwt:
     # Segredo HMAC de desenvolvimento (mín. 32 bytes). Sobrescreva com JWT_SECRET em produção.
-    segredo: ${JWT_SECRET}
+    segredo: ${JWT_SECRET:kawz-tattoo-dev-secret-troque-em-producao-0123456789abcdef-xyz}
     validade-minutos: ${JWT_EXPIRA_MINUTOS:480}
 
   estudio:

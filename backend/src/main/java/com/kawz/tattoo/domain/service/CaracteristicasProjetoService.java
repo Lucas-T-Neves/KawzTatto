@@ -28,7 +28,7 @@ public class CaracteristicasProjetoService {
         Projeto projeto = obterProjeto(projetoId);
         CaracteristicasProjeto caracteristicas = projeto.getCaracteristicas();
         caracteristicas.atualizarCaracteristicas(input.ideiaExpectativa(), input.estiloArte(),
-                input.localizacaoCorpo(), input.dificuldade(), input.cores(), input.complexidade());
+                input.localizacaoCorpo(), input.tamanho(), input.dificuldade(), input.cores(), input.complexidade());
         return toResponse(caracteristicas, projetoId);
     }
 

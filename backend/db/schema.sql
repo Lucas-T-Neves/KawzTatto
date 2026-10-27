@@ -14,13 +14,14 @@ USE kanz_tattoo;
 -- ---------------------------------------------------------
 CREATE TABLE preferencias_cliente (
   id INT NOT NULL AUTO_INCREMENT,
-  musica_favorita VARCHAR(45) NULL,
-  comida_favorita VARCHAR(45) NULL,
-  estilo_tatuagem_favorita VARCHAR(45) NULL,
+  musica_favorita VARCHAR(120) NULL,
+  comida_favorita VARCHAR(120) NULL,
+  estilo_tatuagem_favorita VARCHAR(120) NULL,
   faixa_media_orcamento DECIMAL(10,2) NULL,
-  habitos VARCHAR(45) NULL,
-  disponibilidade_horarios VARCHAR(45) NULL,
-  observacoes_gerais VARCHAR(45) NULL,
+  faixa_orcamento VARCHAR(120) NULL,
+  habitos VARCHAR(255) NULL,
+  disponibilidade_horarios VARCHAR(255) NULL,
+  observacoes_gerais TEXT NULL,
   PRIMARY KEY (id)
 );
 
@@ -69,6 +70,9 @@ CREATE TABLE cliente (
   canal_aquisicao VARCHAR(45) NULL,
   link_conversa VARCHAR(255) NULL,
   link_pasta VARCHAR(255) NULL,
+  localizacao VARCHAR(120) NULL,
+  tamanho VARCHAR(45) NULL,
+  ideia TEXT NULL,
   status VARCHAR(45) NULL,
   data_criacao DATETIME NULL,
   preferencias_cliente_id INT NULL,
@@ -93,8 +97,11 @@ CREATE TABLE anamnese (
 -- descricao, tipo e tatuador_id.
 CREATE TABLE atividade (
   id INT NOT NULL AUTO_INCREMENT,
+  projeto_id INT NULL,
+  cliente_id INT NULL,
   descricao VARCHAR(45) NULL,
   tipo VARCHAR(45) NULL,
+  status VARCHAR(45) NULL,
   titulo VARCHAR(120) NULL,
   data_atividade DATE NULL,
   hora_inicio TIME NULL,
@@ -126,7 +133,7 @@ CREATE TABLE follow_up (
 -- ---------------------------------------------------------
 CREATE TABLE projeto (
   id INT NOT NULL AUTO_INCREMENT,
-  descricao VARCHAR(45) NULL,
+  descricao TEXT NULL,
   status_projeto VARCHAR(45) NULL,
   valor_total DECIMAL(10,2) NULL,
   valor_sinal DECIMAL(10,2) NULL,
@@ -191,6 +198,26 @@ CREATE TABLE movimentacao_financeira (
   PRIMARY KEY (id),
   CONSTRAINT fk_movimentacao_projeto
     FOREIGN KEY (projeto_id) REFERENCES projeto (id)
+);
+
+CREATE TABLE orcamento (
+  id INT NOT NULL AUTO_INCREMENT,
+  nome VARCHAR(150) NULL,
+  data_orcamento DATE NULL,
+  status VARCHAR(45) NULL,
+  valor_total DECIMAL(10,2) NULL,
+  valor_sinal DECIMAL(10,2) NULL,
+  quantidade_sessoes INT NULL,
+  forma_pagamento VARCHAR(45) NULL,
+  data_validade DATE NULL,
+  proposta_aceita BOOLEAN NULL,
+  projeto_id INT NOT NULL,
+  cliente_id INT NOT NULL,
+  PRIMARY KEY (id),
+  CONSTRAINT fk_orcamento_projeto
+    FOREIGN KEY (projeto_id) REFERENCES projeto (id),
+  CONSTRAINT fk_orcamento_cliente
+    FOREIGN KEY (cliente_id) REFERENCES cliente (id)
 );
 
 -- ---------------------------------------------------------

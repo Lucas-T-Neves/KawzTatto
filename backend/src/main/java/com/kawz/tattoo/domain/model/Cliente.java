@@ -31,6 +31,12 @@ public class Cliente extends BaseEntity {
     private String linkConversa;
     @Column(name = "link_pasta", length = 255)
     private String linkPasta;
+    @Column(length = 120)
+    private String localizacao;
+    @Column(length = 45)
+    private String tamanho;
+    @Column(length = 10000)
+    private String ideia;
     @Column(length = 45)
     private String status;
     @Column(name = "data_criacao", updatable = false)
@@ -47,8 +53,10 @@ public class Cliente extends BaseEntity {
     protected Cliente() {}
 
     public Cliente(String nome, String telefone, String cpf, String instagram, String canalAquisicao,
-                   String linkConversa, String linkPasta, String status) {
-        atualizarCadastro(nome, telefone, cpf, instagram, canalAquisicao, linkConversa, linkPasta, status);
+                   String linkConversa, String linkPasta, String localizacao,
+                   String tamanho, String ideia, String status) {
+        atualizarCadastro(nome, telefone, cpf, instagram, canalAquisicao, linkConversa, linkPasta,
+                localizacao, tamanho, ideia, status);
         this.anamneses.add(new Anamnese(this, null, null));
         this.preferencias = new PreferenciasCliente();
     }
@@ -59,7 +67,9 @@ public class Cliente extends BaseEntity {
     }
 
     public void atualizarCadastro(String nome, String telefone, String cpf, String instagram,
-                                  String canalAquisicao, String linkConversa, String linkPasta, String status) {
+                                  String canalAquisicao, String linkConversa, String linkPasta,
+                                  String localizacao, String tamanho,
+                                  String ideia, String status) {
         this.nome = nome;
         this.telefone = telefone;
         this.cpf = cpf;
@@ -67,6 +77,9 @@ public class Cliente extends BaseEntity {
         this.canalAquisicao = canalAquisicao;
         this.linkConversa = linkConversa;
         this.linkPasta = linkPasta;
+        this.localizacao = localizacao;
+        this.tamanho = tamanho;
+        this.ideia = ideia;
         this.status = status;
     }
 
@@ -89,6 +102,9 @@ public class Cliente extends BaseEntity {
     public String getCanalAquisicao() { return canalAquisicao; }
     public String getLinkConversa() { return linkConversa; }
     public String getLinkPasta() { return linkPasta; }
+    public String getLocalizacao() { return localizacao; }
+    public String getTamanho() { return tamanho; }
+    public String getIdeia() { return ideia; }
     public String getStatus() { return status; }
     public LocalDateTime getDataCriacao() { return dataCriacao; }
     public List<Anamnese> getAnamneses() { return anamneses; }
