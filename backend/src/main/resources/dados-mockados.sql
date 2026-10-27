@@ -7,6 +7,9 @@
 -- Login de demonstracao:
 --   email: demo@kawz.local
 --   senha: demo12345
+
+-- E-mail: demo@kawztattoo.test
+-- Senha: KawzDemo2026!
 -- =========================================================
 
 -- ---------------------------
