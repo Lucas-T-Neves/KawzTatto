@@ -1896,7 +1896,6 @@ export function LocalAccess({ onEnter }) {
             {mode === "login" ? "Bem-vindo de volta" : "Crie seu cadastro"}
           </div>
         </div>
-         <p role="status">Acesso à API KawzTatto</p>
         <form
           className={cssClass("local-access-form")}
           onSubmit={(event) => {
