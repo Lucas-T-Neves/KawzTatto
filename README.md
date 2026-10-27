@@ -203,6 +203,12 @@ export DATABASE_PASSWORD=''
 export DDL_AUTO='update'
 ```
 
+O ambiente local carrega automaticamente `dados-mockados.sql` no startup para facilitar demonstração e validação de fluxos. Para desativar a carga automática de mocks, use:
+
+```bash
+export SPRING_SQL_INIT_MODE='never'
+```
+
 Para MySQL, configure a URL, usuário e senha correspondentes, aplique `db/schema.sql` e use:
 
 ```bash
@@ -247,6 +253,12 @@ Windows:
 ```powershell
 $env:JWT_SECRET='um-segredo-local-com-no-minimo-32-caracteres'
 .\mvnw.cmd spring-boot:run
+```
+
+Para subir sem dados mockados:
+
+```powershell
+$env:SPRING_SQL_INIT_MODE='never'
 ```
 
 A API inicia por padrão em:
