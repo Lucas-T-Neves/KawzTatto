@@ -1,5 +1,9 @@
 {
+  "title": "KawzTattoo",
   "description": "Create and manage a collaborative website effortlessly using intuitive markdown instructions, designed for teams and individuals seeking streamlined content development.",
+  "icons": {
+    "icon": "/logo.png"
+  },
   "robots": {
     "index": false
   },
