@@ -3,8 +3,12 @@ import { test } from "node:test"
 import {
   clientPersonalFields,
   clientPreferenceFields,
+  getFormSteps,
   projectFormSections,
   recordNameFor,
+  stepForSection,
+  validateForm,
+  validateFormStep,
   visibleFormFields,
 } from "./formConfiguration.js"
 
@@ -74,4 +78,34 @@ test("payment forms omit session selection without affecting payment naming", ()
     recordNameFor("Financeiro", { kind: "Despesa", name: "Material" }),
     "Material",
   )
+})
+
+test("stepper configuration maps sections and keeps final action in last step", () => {
+  const projectSteps = getFormSteps("Projetos", {})
+  assert.equal(projectSteps.length, 4)
+  assert.equal(projectSteps[0].id, "identificacao")
+  assert.equal(stepForSection("Projetos", "Orçamento", {}), "orcamento")
+  const expenseSteps = getFormSteps("Financeiro", { kind: "Despesa" })
+  assert.deepEqual(expenseSteps.map((step) => step.id), [
+    "contextoDespesa",
+    "valorData",
+    "observacoes",
+  ])
+})
+
+test("step validation blocks required fields by current step and before finish", () => {
+  const firstStepErrors = validateFormStep("Orçamentos", { status: "Rascunho" }, "vinculos")
+  assert.equal(firstStepErrors.projectId, "Selecione o projeto do orçamento.")
+  assert.equal(firstStepErrors.clientId, "Selecione o cliente do orçamento.")
+  const finishErrors = validateForm("Financeiro", {
+    kind: "Receita",
+    projectId: "",
+    value: "",
+    date: "",
+    status: "",
+  })
+  assert.equal(finishErrors.projectId, "Selecione o projeto da movimentação.")
+  assert.equal(finishErrors.value, "Informe um valor válido.")
+  assert.equal(finishErrors.date, "Informe a data da movimentação.")
+  assert.equal(finishErrors.status, "Informe o status da movimentação.")
 })

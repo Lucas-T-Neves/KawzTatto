@@ -20,6 +20,7 @@ import {
   SidebarNavigation,
   IconButton,
 } from "./ui/index.jsx"
+import FormStepper from "./ui/FormStepper.jsx"
 import Calendar from "./Calendar.jsx"
 import ProjectImageField from "./features/projects/view/ProjectImageField.jsx"
 import ProjectSelectField from "./features/projects/view/ProjectSelectField.jsx"
@@ -40,7 +41,11 @@ import FinanceActions from "./features/finance/view/FinanceActions.jsx"
 import MonthPicker from "./features/finance/view/MonthPicker.jsx"
 import ConversationButton from "./features/clients/view/ConversationButton.jsx"
 import {
-  visibleFormFields,
+  fieldsForStep,
+  getFormSteps,
+  stepForSection,
+  validateForm,
+  validateFormStep,
 } from "./features/studio/model/formConfiguration.js"
 import { studioDashboard } from "./features/studio/model/studioDashboard.js"
 const pages = ["Início", "Agenda", "Clientes", "Projetos", "Financeiro"]
@@ -264,7 +269,8 @@ export function Workspace({ onExit, profile, page }) {
   const [projectStatus, setProjectStatus] = useState("Todos")
   const [editor, setEditor] = useState("")
   const [form, setForm] = useState({ id: "", name: "" })
-  const [formSection, setFormSection] = useState("Dados gerais")
+  const [stepIndex, setStepIndex] = useState(0)
+  const [fieldErrors, setFieldErrors] = useState({})
   const [error, setError] = useState("")
   const [notice, setNotice] = useState(routeLocation.state?.notice || "")
   const [detail, setDetail] = useState(null)
@@ -292,17 +298,17 @@ export function Workspace({ onExit, profile, page }) {
     setTab("Dados")
     setDetail(null)
   }
-  const open = (key, entry, defaults = {}) => {
+  const open = (key, entry, defaults = {}, options = {}) => {
     if (key === "Agenda" && !apiMode) {
       setNotice("Configure VITE_API_BASE_URL para cadastrar na agenda.")
       return
     }
     if (!["Clientes", "Projetos", "Agenda", "Orçamentos", "Financeiro", "Acompanhamentos", "Contratos"].includes(key)) return
     setEditor(key)
-    setFormSection(key === "Clientes" ? "Dados pessoais" : "Dados gerais")
     setError("")
+    setFieldErrors({})
     setDetail(null)
-    setForm(
+    const nextForm =
       entry || {
         id: "",
         name: "",
@@ -330,8 +336,12 @@ export function Workspace({ onExit, profile, page }) {
         accepted: "Não",
         changes: "5",
         ...defaults,
-      },
-    )
+      }
+    setForm(nextForm)
+    const steps = getFormSteps(key, nextForm)
+    const preferredStep = options.stepId || stepForSection(key, options.section, nextForm)
+    const preferredIndex = steps.findIndex((step) => step.id === preferredStep)
+    setStepIndex(preferredIndex >= 0 ? preferredIndex : 0)
   }
   const clientStatus = (id) =>
     (apiClients.client?.id === id ? apiClients.client.status : find("Clientes", id)?.status) || ""
@@ -339,6 +349,12 @@ export function Workspace({ onExit, profile, page }) {
   const sessionStatus = status
   const save = async () => {
     if (!["Clientes", "Projetos", "Agenda", "Orçamentos", "Financeiro", "Acompanhamentos", "Contratos"].includes(editor)) return
+    const validationErrors = validateForm(editor, form)
+    setFieldErrors(validationErrors)
+    if (Object.keys(validationErrors).length) {
+      setError("Corrija os campos obrigatórios para finalizar o cadastro.")
+      return
+    }
     setError("")
     try {
       if (editor === "Clientes") {
@@ -404,6 +420,32 @@ export function Workspace({ onExit, profile, page }) {
     : clientContext
       ? { clientId: clientContext.id }
       : {}
+  const editorSteps = editor ? getFormSteps(editor, form) : []
+  const activeStep = editorSteps[stepIndex] || null
+  const activeStepFields = activeStep ? fieldsForStep(editor, form, activeStep.id) : []
+  const savingInEditor =
+    (editor === "Clientes" && apiClients.saving) ||
+    (editor === "Projetos" && apiProjects.saving) ||
+    (editor === "Agenda" && apiAgenda.saving) ||
+    (editor === "Orçamentos" && apiBudgets.saving) ||
+    (editor === "Financeiro" && apiFinance.saving) ||
+    (editor === "Acompanhamentos" && apiFollowUps.saving) ||
+    (editor === "Contratos" && apiContracts.saving)
+  const advanceStep = () => {
+    if (!activeStep) return
+    const errors = validateFormStep(editor, form, activeStep.id)
+    setFieldErrors(errors)
+    if (Object.keys(errors).length) {
+      setError("Corrija os campos obrigatórios desta etapa para avançar.")
+      return
+    }
+    setError("")
+    setStepIndex((current) => Math.min(current + 1, editorSteps.length - 1))
+  }
+  const goBackStep = () => {
+    setError("")
+    setStepIndex((current) => Math.max(current - 1, 0))
+  }
   const normalizeUrl = (url) => {
     const value = typeof url === "string" ? url.trim() : ""
     if (!value) return ""
@@ -998,12 +1040,12 @@ export function Workspace({ onExit, profile, page }) {
                           disabled={!context}
                           onClick={() => {
                             if (!context) return
-                            open("Clientes", context)
-                            setFormSection(
-                              tab === "Preferências"
-                                ? "Preferências"
-                                : "Dados pessoais",
-                            )
+                            open("Clientes", context, {}, {
+                              section:
+                                tab === "Preferências"
+                                  ? "Preferências"
+                                  : "Dados pessoais",
+                            })
                           }}
                         />
                         <IconButton
@@ -1060,14 +1102,14 @@ export function Workspace({ onExit, profile, page }) {
                           icon={<Pencil className={cssClass("control-icon")} />}
                           onClick={() => {
                             if (!context) return
-                            open(page, context)
-                            setFormSection(
-                              tab === "Características"
-                                ? "Características"
-                                : tab === "Acompanhamento"
-                                  ? "Acompanhamento"
-                                  : "Dados gerais",
-                            )
+                            open(page, context, {}, {
+                              section:
+                                tab === "Características"
+                                  ? "Características"
+                                  : tab === "Acompanhamento"
+                                    ? "Acompanhamento"
+                                    : "Dados gerais",
+                            })
                           }}
                           disabled={!context}
                         />
@@ -1500,60 +1542,36 @@ export function Workspace({ onExit, profile, page }) {
                 editor === "Agenda" ? form.kind : editor
               }`
         }
-        onClose={() => setEditor("")}
+        onClose={() => {
+          setEditor("")
+          setFieldErrors({})
+          setError("")
+        }}
         size="large"
         footer={
-          <>
-            <Button variant="neutral" onClick={() => setEditor("")}>
+          <div className={cssClass("editor-footer") }>
+            <Button
+              variant="neutral"
+              onClick={() => {
+                setEditor("")
+                setFieldErrors({})
+                setError("")
+              }}
+            >
               Cancelar
             </Button>
-            <Button
-              disabled={
-                (editor === "Clientes" && apiClients.saving) ||
-                (editor === "Projetos" && apiProjects.saving) ||
-                (editor === "Agenda" && apiAgenda.saving) ||
-                (editor === "Orçamentos" && apiBudgets.saving) ||
-                (editor === "Financeiro" && apiFinance.saving) ||
-                (editor === "Acompanhamentos" && apiFollowUps.saving) ||
-                (editor === "Contratos" && apiContracts.saving)
-              }
-              onClick={save}
-            >
-              {(editor === "Clientes" && apiClients.saving) ||
-              (editor === "Projetos" && apiProjects.saving) ||
-              (editor === "Agenda" && apiAgenda.saving) ||
-              (editor === "Orçamentos" && apiBudgets.saving) ||
-              (editor === "Financeiro" && apiFinance.saving) ||
-              (editor === "Acompanhamentos" && apiFollowUps.saving) ||
-              (editor === "Contratos" && apiContracts.saving)
-                ? "Salvando…"
-                : "Salvar"}
-            </Button>
-          </>
+            <FormStepper
+              steps={editorSteps}
+              currentIndex={stepIndex}
+              onBack={goBackStep}
+              onNext={advanceStep}
+              onFinish={save}
+              finishing={savingInEditor}
+              className={cssClass("editor-stepper")}
+            />
+          </div>
         }
       >
-        {["Clientes", "Projetos"].includes(editor) && (
-          <div className={cssClass("action-row form-sections")}>
-            {(editor === "Clientes"
-              ? ["Dados pessoais", "Preferências"]
-              : [
-                  "Dados gerais",
-                  "Características",
-                  "Orçamento",
-                  "Acompanhamento",
-                ]
-            ).map((section) => (
-              <Button
-                size="small"
-                key={section}
-                variant={formSection === section ? "primary" : "neutral"}
-                onClick={() => setFormSection(section)}
-              >
-                {section}
-              </Button>
-            ))}
-          </div>
-        )}
         <div
           className={cssClass(
             editor === "Agenda"
@@ -1567,10 +1585,7 @@ export function Workspace({ onExit, profile, page }) {
         >
           <div className={cssClass("editor-fields")}>
             {(fields[editor] || [])
-              .filter(([key]) => {
-                const visible = visibleFormFields(editor, form, formSection)
-                return !visible || visible.includes(key)
-              })
+              .filter(([key]) => !activeStep || activeStepFields.includes(key))
               .map(([key, originalLabel, type]) => {
                 const label =
                   editor === "Agenda" &&
@@ -1586,7 +1601,13 @@ export function Workspace({ onExit, profile, page }) {
                           ? "Vencimento"
                           : "Data do recebimento"
                         : originalLabel
-                const update = (value) =>
+                const update = (value) => {
+                  setFieldErrors((previous) => {
+                    if (!previous[key]) return previous
+                    const next = { ...previous }
+                    delete next[key]
+                    return next
+                  })
                   setForm((previous) => ({
                     ...previous,
                     [key]: value,
@@ -1599,28 +1620,32 @@ export function Workspace({ onExit, profile, page }) {
                         }
                       : {}),
                   }))
+                }
+                const fieldError = fieldErrors[key]
                 if (editor === "Projetos" && type === "image")
                   return (
-                    <ProjectImageField
-                      key={`${editor}-${form.id || "new"}-${key}`}
-                      value={
-                        form.reference
-                          ? {
-                              id: form.referenceId || "",
-                              name: form.referenceName || "Referência",
-                              url: form.reference,
-                            }
-                          : null
-                      }
-                      onChange={(image) =>
-                        setForm((previous) => ({
-                          ...previous,
-                          reference: image?.url || "",
-                          referenceId: image?.id || "",
-                          referenceName: image?.name || "",
-                        }))
-                      }
-                    />
+                    <div key={`${editor}-${form.id || "new"}-${key}`} className={cssClass("field-with-error") }>
+                      <ProjectImageField
+                        value={
+                          form.reference
+                            ? {
+                                id: form.referenceId || "",
+                                name: form.referenceName || "Referência",
+                                url: form.reference,
+                              }
+                            : null
+                        }
+                        onChange={(image) =>
+                          setForm((previous) => ({
+                            ...previous,
+                            reference: image?.url || "",
+                            referenceId: image?.id || "",
+                            referenceName: image?.name || "",
+                          }))
+                        }
+                      />
+                      {fieldError && <p className={cssClass("field-error")}>{fieldError}</p>}
+                    </div>
                   )
                 const SelectionField = ["Projetos", "Orçamentos"].includes(
                   editor,
@@ -1629,71 +1654,81 @@ export function Workspace({ onExit, profile, page }) {
                   : SelectField
                 if (Array.isArray(type))
                   return (
-                    <SelectionField
-                      key={key}
-                      label={label}
-                      value={form[key] || ""}
-                      onChange={update}
-                      options={type.map((value) => ({ value, label: value }))}
-                    />
+                    <div key={key} className={cssClass("field-with-error") }>
+                      <SelectionField
+                        label={label}
+                        value={form[key] || ""}
+                        onChange={update}
+                        options={type.map((value) => ({ value, label: value }))}
+                      />
+                      {fieldError && <p className={cssClass("field-error")}>{fieldError}</p>}
+                    </div>
                   )
                 if (type && ["Clientes", "Projetos", "Agenda"].includes(type))
                   return (
-                    <SelectionField
-                      key={key}
-                      label={label}
-                      value={form[key] || ""}
-                      onChange={update}
-                      options={[
-                        { value: "", label: "Selecione" },
-                        ...list(type)
-                          .filter((item) =>
-                            type === "Agenda"
-                              ? item.kind === "Sessão" &&
-                                (!form.projectId ||
-                                  item.projectId === form.projectId)
-                              : type === "Projetos"
-                                ? !form.clientId ||
-                                  item.clientId === form.clientId
-                                : true,
-                          )
-                          .map((item) => ({
-                            value: item.id,
-                            label: item.name,
-                          })),
-                      ]}
-                    />
+                    <div key={key} className={cssClass("field-with-error") }>
+                      <SelectionField
+                        label={label}
+                        value={form[key] || ""}
+                        onChange={update}
+                        options={[
+                          { value: "", label: "Selecione" },
+                          ...list(type)
+                            .filter((item) =>
+                              type === "Agenda"
+                                ? item.kind === "Sessão" &&
+                                  (!form.projectId ||
+                                    item.projectId === form.projectId)
+                                : type === "Projetos"
+                                  ? !form.clientId ||
+                                    item.clientId === form.clientId
+                                  : true,
+                            )
+                            .map((item) => ({
+                              value: item.id,
+                              label: item.name,
+                            })),
+                        ]}
+                      />
+                      {fieldError && <p className={cssClass("field-error")}>{fieldError}</p>}
+                    </div>
                   )
                 if (type === "date" || type === "time")
                   return (
-                    <DateTimeField
-                      key={key}
-                      label={label}
-                      type={type}
-                      value={form[key] || ""}
-                      onChange={update}
-                    />
+                    <div key={key} className={cssClass("field-with-error") }>
+                      <DateTimeField
+                        label={label}
+                        type={type}
+                        value={form[key] || ""}
+                        onChange={update}
+                      />
+                      {fieldError && <p className={cssClass("field-error")}>{fieldError}</p>}
+                    </div>
                   )
                 return type === "textarea" ? (
-                  <TextareaField
-                    key={key}
-                    label={label}
-                    value={form[key] || ""}
-                    onChange={update}
-                    placeholder="Adicione as informações"
-                  />
+                  <div key={key} className={cssClass("field-with-error") }>
+                    <TextareaField
+                      label={label}
+                      value={form[key] || ""}
+                      onChange={update}
+                      placeholder="Adicione as informações"
+                    />
+                    {fieldError && <p className={cssClass("field-error")}>{fieldError}</p>}
+                  </div>
                 ) : (
-                  <InputField
-                    key={key}
-                    label={label}
-                    type={type || "text"}
-                    min={type === "number" ? "0" : undefined}
-                    step={type === "number" ? "any" : undefined}
-                    value={form[key] || ""}
-                    maxLength={editor === "Clientes" && apiClientPage ? { name: 150, phone: 20, instagram: 100, status: 45, folder: 255 }[key] : undefined}
-                    onChange={update}
-                    placeholder={label}
-                  />
+                  <div key={key} className={cssClass("field-with-error") }>
+                    <InputField
+                      label={label}
+                      type={type || "text"}
+                      min={type === "number" ? "0" : undefined}
+                      step={type === "number" ? "any" : undefined}
+                      value={form[key] || ""}
+                      maxLength={editor === "Clientes" && apiClientPage ? { name: 150, phone: 20, instagram: 100, status: 45, folder: 255 }[key] : undefined}
+                      onChange={update}
+                      placeholder={label}
+                    />
+                    {fieldError && <p className={cssClass("field-error")}>{fieldError}</p>}
+                  </div>
                 )
               })}
           </div>
@@ -1750,8 +1785,7 @@ export function Workspace({ onExit, profile, page }) {
                   ) {
                     const project = find("Projetos", detail.projectId)
                     if (project) {
-                      open("Projetos", project)
-                      setFormSection("Orçamento")
+                      open("Projetos", project, {}, { section: "Orçamento" })
                     }
                   } else open(detail.collection, detail)
                 }}

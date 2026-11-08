@@ -206,6 +206,15 @@ button:not(:where(.navigation *)):focus-visible { outline:calc(var(--space-xs) /
 .editor-fields > :has(textarea) { grid-column:1 / -1; }
 .editor-fields input, .editor-fields textarea, .editor-fields select { color-scheme:dark; border-radius:var(--corner-md); }
 .form-sections { flex-wrap:wrap; gap:var(--space-md); }
+.editor-footer { display:flex; align-items:flex-end; justify-content:space-between; gap:var(--space-lg); width:100%; }
+.editor-stepper { display:flex; flex-direction:column; gap:var(--space-sm); flex:1; align-items:flex-end; }
+.editor-stepper > div:first-child { color:var(--text-secondary); font-size:var(--text-xs); }
+.editor-stepper > div:nth-child(2) { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:var(--space-xs); }
+.editor-stepper > div:nth-child(2) > span { font-size:var(--text-xs); color:var(--text-secondary); padding:var(--space-xs) var(--space-sm); border-radius:var(--corner-full); background:var(--input-bg); }
+.editor-stepper > div:nth-child(2) > span[data-active="true"] { color:var(--text-primary); background:var(--surface-hover); border:1px solid var(--border-selected); }
+.editor-stepper > div:last-child { display:flex; gap:var(--space-sm); }
+.field-with-error { display:flex; flex-direction:column; gap:var(--space-xs); }
+.field-error { margin:0; color:var(--brand-primary); font-size:var(--text-xs); }
 .activity-editor { display:grid; grid-template-columns:1fr; gap:var(--space-xl); }
 .activity-editor .editor-fields { grid-template-columns:1fr; max-height:none; overflow:visible; }
 .client-editor .editor-fields { max-height:none; overflow:visible; }
@@ -432,6 +441,10 @@ button:not(:where(.navigation *)):focus-visible { outline:calc(var(--space-xs) /
   .calendar-popover { left:auto; right:0; max-width:80vw; }
   .activity-editor { grid-template-columns:1fr; }
   .editor-fields { grid-template-columns:1fr; }
+  .editor-footer { flex-direction:column; align-items:stretch; }
+  .editor-stepper { align-items:stretch; }
+  .editor-stepper > div:nth-child(2) { justify-content:flex-start; }
+  .editor-stepper > div:last-child { justify-content:space-between; }
   .record-button { gap:var(--space-md); }
   .detail-grid { grid-template-columns:1fr; }
 }
