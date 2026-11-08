@@ -5,7 +5,7 @@
 -- coerentes para validar JWT, fluxos e telas da plataforma.
 --
 -- Login de demonstracao:
---   email: demo@kawz.local
+--   email: delmo@kawz.loca
 --   senha: demo12345
 
 -- E-mail: demo@kawztattoo.test
