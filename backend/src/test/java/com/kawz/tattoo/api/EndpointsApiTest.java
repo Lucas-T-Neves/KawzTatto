@@ -1,7 +1,10 @@
 package com.kawz.tattoo.api;
 
+import com.kawz.tattoo.domain.cliente.Cliente;
+
+
 import com.kawz.tattoo.domain.exception.IntegracaoException;
-import com.kawz.tattoo.integration.CloudinaryClient;
+import com.kawz.tattoo.infrastructure.integration.CloudinaryClient;
 import com.kawz.tattoo.support.FakeServer;
 import com.kawz.tattoo.support.FakeServer.Resp;
 import com.kawz.tattoo.support.HttpApi;

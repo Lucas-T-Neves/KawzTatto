@@ -1,17 +1,17 @@
 package com.kawz.tattoo;
 
-import com.kawz.tattoo.api.dto.ApiModels.ClienteInput;
-import com.kawz.tattoo.api.dto.ApiModels.ClienteResponse;
-import com.kawz.tattoo.api.dto.ApiModels.MovimentacaoInput;
-import com.kawz.tattoo.api.dto.ApiModels.ProjetoInput;
-import com.kawz.tattoo.api.dto.ApiModels.ProjetoResponse;
-import com.kawz.tattoo.api.dto.ApiModels.TatuadorCreate;
-import com.kawz.tattoo.api.dto.ApiModels.TatuadorResponse;
+import com.kawz.tattoo.api.cliente.dto.ClienteInput;
+import com.kawz.tattoo.api.cliente.dto.ClienteResponse;
+import com.kawz.tattoo.api.movimentacao.dto.MovimentacaoInput;
+import com.kawz.tattoo.api.projeto.dto.ProjetoInput;
+import com.kawz.tattoo.api.projeto.dto.ProjetoResponse;
+import com.kawz.tattoo.api.tatuador.dto.TatuadorCreate;
+import com.kawz.tattoo.api.tatuador.dto.TatuadorResponse;
 import com.kawz.tattoo.api.web.Paginacao;
-import com.kawz.tattoo.domain.service.ClienteService;
-import com.kawz.tattoo.domain.service.MovimentacaoService;
-import com.kawz.tattoo.domain.service.ProjetoService;
-import com.kawz.tattoo.domain.service.TatuadorService;
+import com.kawz.tattoo.domain.cliente.ClienteService;
+import com.kawz.tattoo.domain.movimentacao.MovimentacaoService;
+import com.kawz.tattoo.domain.projeto.ProjetoService;
+import com.kawz.tattoo.domain.tatuador.TatuadorService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -36,12 +36,15 @@ class KawzTattooApplicationTests {
                 new TatuadorCreate("Kawz", "kawz@example.com", "senha-segura"));
         ClienteResponse cliente = clientes.criar(new ClienteInput(
                 "Ana", "11999999999", "123.456.789-00", "@ana", "Instagram",
-                null, null, "LEAD"));
+                null, null, null, null, null, null, null, null, null,
+                null, null, null, "LEAD"));
 
         ProjetoResponse projeto = projetos.criar(new ProjetoInput(
-                tatuador.id(), cliente.id(), "Fechamento de braço", "ORCAMENTO",
+                tatuador.id(), cliente.id(), "Fechamento de braço", "Fechamento de braço",
+                null, "ORCAMENTO",
                 new BigDecimal("3000.00"), new BigDecimal("500.00"), 3,
-                LocalDate.now().plusMonths(1)));
+                LocalDate.now().plusMonths(1),
+                null, null, null, null, null, null, null, null, null));
 
         // Sem movimentações: nada recebido, sinal não pago, saldo = valor total
         assertThat(projeto.saldo()).isEqualByComparingTo("3000");

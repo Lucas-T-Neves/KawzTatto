@@ -1,5 +1,8 @@
 package com.kawz.tattoo.integration;
 
+import com.kawz.tattoo.infrastructure.integration.NylasCalendarClient;
+
+
 import com.kawz.tattoo.domain.exception.IntegracaoException;
 import com.kawz.tattoo.support.FakeServer;
 import com.kawz.tattoo.support.FakeServer.Resp;

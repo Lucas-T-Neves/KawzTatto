@@ -1,6 +1,6 @@
 package com.kawz.tattoo.domain.security;
 
-import com.kawz.tattoo.domain.model.Tatuador;
+import com.kawz.tattoo.domain.tatuador.Tatuador;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;

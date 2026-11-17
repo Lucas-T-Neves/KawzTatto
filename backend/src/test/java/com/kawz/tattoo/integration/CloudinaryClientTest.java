@@ -1,5 +1,8 @@
 package com.kawz.tattoo.integration;
 
+import com.kawz.tattoo.infrastructure.integration.CloudinaryClient;
+
+
 import com.kawz.tattoo.domain.exception.IntegracaoException;
 import org.junit.jupiter.api.Test;
 
