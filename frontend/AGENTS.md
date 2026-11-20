@@ -41,7 +41,7 @@ Tailwind CSS v4 remains installed for the existing global reset and utilities vi
 ## Verification
 
 - Production build: `npm run build`
-- Local data and demo-auth tests: `node --test src/features/studio/model/demoData.test.js src/features/auth/model/localAuth.test.js`
+- Local data and auth tests: `node --test src/features/studio/model/*.test.js src/features/auth/model/*.test.js`
 - Local UI rendering tests: `npm run test:ui` (HTML rendering only, not browser layout or interaction)
 - The application source uses `.js` and `.jsx`, not TypeScript.
 
