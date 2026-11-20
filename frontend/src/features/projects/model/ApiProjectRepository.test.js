@@ -31,7 +31,7 @@ test("projects use paginated API contract and include JWT", async () => {
       id: "9",
       name: "Projeto Black",
       clientId: "5",
-      status: "EM_ANDAMENTO",
+      status: "Em andamento",
       description: "Fechamento",
       folder: "",
       total: "3500",
@@ -51,6 +51,14 @@ test("projects use paginated API contract and include JWT", async () => {
   } finally {
     globalThis.fetch = original
   }
+})
+
+test("project statuses from backend enums are normalized to project pipeline labels", () => {
+  assert.equal(fromApiProject({ id: 1, nome: "A", statusProjeto: "ORCAMENTO" }).status, "A iniciar")
+  assert.equal(fromApiProject({ id: 2, nome: "B", statusProjeto: "PLANEJAMENTO" }).status, "A iniciar")
+  assert.equal(fromApiProject({ id: 3, nome: "C", statusProjeto: "EM_ANDAMENTO" }).status, "Em andamento")
+  assert.equal(fromApiProject({ id: 4, nome: "D", statusProjeto: "CONCLUIDO" }).status, "Finalizado")
+  assert.equal(fromApiProject({ id: 5, nome: "E", statusProjeto: "CANCELADO" }).status, "Cancelado")
 })
 
 test("project writes send ProjetoInput contract", async () => {

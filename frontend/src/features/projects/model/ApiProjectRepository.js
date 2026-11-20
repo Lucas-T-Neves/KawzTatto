@@ -12,11 +12,24 @@ const parsePositiveInt = (value, label) => {
   return number
 }
 
+const normalizeStatus = (value) => {
+  const normalized = String(value || "")
+    .replaceAll("_", " ")
+    .trim()
+    .toLocaleLowerCase("pt-BR")
+  if (!normalized) return ""
+  if (["orcamento", "planejamento"].includes(normalized)) return "A iniciar"
+  if (normalized === "em andamento") return "Em andamento"
+  if (normalized === "concluido") return "Finalizado"
+  if (normalized === "cancelado") return "Cancelado"
+  return normalized[0].toLocaleUpperCase("pt-BR") + normalized.slice(1)
+}
+
 export const fromApiProject = (item) => ({
   id: String(item.id),
   name: item.nome || item.descricao || "Projeto",
   clientId: item.clienteId ? String(item.clienteId) : "",
-  status: item.statusProjeto || "",
+  status: normalizeStatus(item.statusProjeto),
   description: item.descricao || "",
   folder: item.linkPasta || "",
   total: item.valorTotal != null ? String(item.valorTotal) : "",

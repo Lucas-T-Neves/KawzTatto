@@ -9,7 +9,7 @@ export default function useProjectArtifactsViewModel(project, status, stored) {
             {
               id: `budget-${project.id}`,
               source: "project",
-              name: `Orçamento · ${project.name}`,
+              name: `Orçamento ${project.name}`,
               date: project.created?.slice(0, 10) || "",
               projectId: project.id,
               clientId: project.clientId,

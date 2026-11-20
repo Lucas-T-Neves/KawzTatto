@@ -9,7 +9,7 @@ export default function ProjectImageField({ value }) {
         type="file"
         accept="image/jpeg,image/png,image/webp"
         disabled
-        description="Upload de imagens ainda não integrado à API."
+        description="Não foi possível enviar imagens no momento."
         prefix={<ImagePlus className={cssClass("control-icon")} />}
       />
       {value && (
