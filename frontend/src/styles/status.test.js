@@ -10,6 +10,7 @@ test("positive outcomes use the positive semantic token", () => {
     "Finalizado",
     "Aprovado",
     "Realizada",
+    "EM_ANDAMENTO",
   ]) {
     assert.equal(statusTone(status), "status-positive", status)
   }

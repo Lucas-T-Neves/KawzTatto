@@ -20,25 +20,25 @@ export async function apiRequest(path, { method = "GET", body, token, signal } =
     })
   } catch (error) {
     if (error.name === "AbortError") throw error
-    throw new Error("Não foi possível conectar à API. Verifique a URL e a conexão.")
+    throw new Error("Não foi possível conectar. Verifique sua internet e tente novamente.")
   }
   const text = await response.text()
   let result = null
   try {
     result = text ? JSON.parse(text) : null
   } catch {
-    if (response.ok) throw new Error("A API retornou uma resposta inválida (esperado JSON).")
+    if (response.ok) throw new Error("Recebemos uma resposta inesperada. Tente novamente.")
   }
   if (!response.ok) {
     const message = response.status === 401
-      ? "Acesso à API expirado ou não autorizado. Entre novamente."
-      : result?.detail || result?.message || result?.title || `Erro HTTP ${response.status} ao acessar a API.`
+      ? "Sua sessão expirou. Faça login novamente."
+      : result?.detail || result?.message || result?.title || `Erro HTTP ${response.status}. Tente novamente.`
     const error = new Error(message)
     error.status = response.status
     throw error
   }
   if (!text && response.status !== 204 && method !== "DELETE") {
-    throw new Error("A API retornou uma resposta vazia inesperada.")
+    throw new Error("Não foi possível concluir a ação. Tente novamente.")
   }
   return result
 }

@@ -365,12 +365,12 @@ export function visibleFormFields(editor, form, section) {
 
 export function recordNameFor(editor, form, { projectName, clientName } = {}) {
   if (editor === "Financeiro" && form.kind !== "Despesa") {
-    return `${form.type || "Pagamento"} · ${projectName || "Projeto"}`
+    return `${form.type || "Pagamento"} ${projectName || "Projeto"}`
   }
   if (editor === "Acompanhamentos") {
     return form.id && form.name
       ? form.name
-      : `${form.type || "Acompanhamento"} · ${clientName || "Cliente"}`
+      : `${form.type || "Acompanhamento"} ${clientName || "Cliente"}`
   }
   return form.name || ""
 }

@@ -1,5 +1,5 @@
 export function statusTone(value = "") {
-  const status = value.trim().toLocaleLowerCase("pt-BR")
+  const status = String(value || "").replaceAll("_", " ").trim().toLocaleLowerCase("pt-BR")
   if (
     [
       "cliente",

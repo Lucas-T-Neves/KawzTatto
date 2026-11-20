@@ -3,8 +3,6 @@ import { test, beforeEach, afterEach } from "node:test"
 import {
   activeLocalProfile,
   activeProfileKey,
-  demoProfile,
-  localPasswordHash,
   localProfiles,
   profileKey,
 } from "./localAuth.js"
@@ -23,18 +21,7 @@ afterEach(() => {
   else globalThis.localStorage = previousStorage
 })
 
-test("public demo credentials match the same password verifier as local login", async () => {
-  assert.equal(
-    await localPasswordHash("KawzDemo2026!", demoProfile.passwordSalt),
-    demoProfile.passwordHash,
-  )
-  assert.notEqual(
-    await localPasswordHash("incorrect", demoProfile.passwordSalt),
-    demoProfile.passwordHash,
-  )
-})
-
-test("demo profile is available without creating or overwriting local registrations", () => {
+test("local profiles return saved registrations only", () => {
   const existing = {
     name: "Local user",
     email: "local@example.invalid",
@@ -42,27 +29,25 @@ test("demo profile is available without creating or overwriting local registrati
     passwordSalt: "keep",
   }
   localStorage.setItem(profileKey, JSON.stringify([existing]))
-  assert.deepEqual(localProfiles()[0], existing)
-  assert.equal(
-    localProfiles().filter((profile) => profile.email === demoProfile.email)
-      .length,
-    1,
-  )
+  assert.deepEqual(localProfiles(), [existing])
   assert.deepEqual(JSON.parse(localStorage.getItem(profileKey)), [existing])
 })
 
-test("demo login can be restored from the active email", () => {
+test("active profile resolves only when saved profile exists", () => {
+  const existing = {
+    name: "Local user",
+    email: "local@example.invalid",
+    passwordHash: "keep",
+    passwordSalt: "keep",
+  }
   assert.equal(activeLocalProfile(), null)
-  localStorage.setItem(activeProfileKey, demoProfile.email)
-  assert.deepEqual(activeLocalProfile(), demoProfile)
+  localStorage.setItem(profileKey, JSON.stringify([existing]))
+  localStorage.setItem(activeProfileKey, existing.email)
+  assert.deepEqual(activeLocalProfile(), existing)
 })
 
-test("existing registration with the demo email is preserved", () => {
-  const existing = {
-    ...demoProfile,
-    name: "Existing name",
-    passwordHash: "existing-hash",
-  }
-  localStorage.setItem(profileKey, JSON.stringify([existing]))
-  assert.deepEqual(localProfiles(), [existing])
+test("malformed storage falls back to empty profiles", () => {
+  localStorage.setItem(profileKey, "not-json")
+  assert.deepEqual(localProfiles(), [])
+  assert.equal(activeLocalProfile(), null)
 })

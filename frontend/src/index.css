@@ -77,6 +77,10 @@
   --status-positive-bg: color-mix(in srgb, var(--success) 10%, var(--input-bg));
   --status-negative-bg: color-mix(in srgb, var(--danger) 12%, var(--input-bg));
   --status-pending-bg: color-mix(in srgb, var(--warning) 10%, var(--input-bg));
+  --appointment-task-accent: #b6a0ff;
+  --appointment-task-bg: color-mix(in srgb,var(--appointment-task-accent) 12%,var(--input-bg));
+  --appointment-event-accent: #7bd8e0;
+  --appointment-event-bg: color-mix(in srgb,var(--appointment-event-accent) 12%,var(--input-bg));
   --finance-chart-income: color-mix(in srgb, var(--color-blue-700) 70%, var(--text-primary));
   --finance-chart-expense: var(--status-positive-text);
   --finance-chart-grid: var(--border-primary);

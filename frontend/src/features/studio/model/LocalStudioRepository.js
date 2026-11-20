@@ -1,4 +1,3 @@
-import { initializeDemoData } from "./demoData.js"
 export default class LocalStudioRepository {
   storage
   constructor(storage) {
@@ -11,7 +10,7 @@ export default class LocalStudioRepository {
       if (stored && typeof stored === "object" && !Array.isArray(stored)) {
         data = Object.fromEntries(
           Object.entries(stored)
-            .filter(([, entries]) => Array.isArray(entries))
+            .filter(([key, entries]) => key !== "__demo" && Array.isArray(entries))
             .map(([key, entries]) => [
               key,
               entries
@@ -19,7 +18,9 @@ export default class LocalStudioRepository {
                   (item) =>
                     item &&
                     typeof item.id === "string" &&
-                    typeof item.name === "string",
+                    typeof item.name === "string" &&
+                    !item.id.startsWith("demo-") &&
+                    item.demo !== "true",
                 )
                 .map((item) =>
                   key === "Agenda" && !item.kind
@@ -39,7 +40,7 @@ export default class LocalStudioRepository {
     } catch {
       // Preserve the existing fallback for malformed or unavailable storage.
     }
-    return initializeDemoData(data)
+    return data
   }
   save(data) {
     this.storage.setItem("kawz-data", JSON.stringify(data))

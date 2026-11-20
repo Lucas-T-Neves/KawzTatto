@@ -37,7 +37,7 @@ test("follow-ups have a date and generate a name without a description input", (
     recordNameFor("Acompanhamentos", { type: "Pós-tatuagem" }, {
       clientName: "Ana",
     }),
-    "Pós-tatuagem · Ana",
+    "Pós-tatuagem Ana",
   )
   assert.equal(
     recordNameFor("Acompanhamentos", { id: "old", name: "Contato existente" }),
@@ -72,7 +72,7 @@ test("payment forms omit session selection without affecting payment naming", ()
     recordNameFor("Financeiro", { kind: "Receita", type: "Sinal" }, {
       projectName: "Lua",
     }),
-    "Sinal · Lua",
+    "Sinal Lua",
   )
   assert.equal(
     recordNameFor("Financeiro", { kind: "Despesa", name: "Material" }),
