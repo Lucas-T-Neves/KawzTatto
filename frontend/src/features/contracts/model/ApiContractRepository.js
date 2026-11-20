@@ -2,7 +2,7 @@ import { apiRequest } from "../../../shared/model/http.js"
 
 export const fromApiContract = (item, projectId = "", clientId = "") => ({
   id: String(item.id || item.contratoId),
-  name: `Contrato · ${projectId || item.nomeCliente || "Projeto"}`,
+  name: `Contrato ${projectId || item.nomeCliente || "Projeto"}`,
   projectId: projectId ? String(projectId) : "",
   clientId: clientId ? String(clientId) : "",
   status: item.statusContrato || "Rascunho",

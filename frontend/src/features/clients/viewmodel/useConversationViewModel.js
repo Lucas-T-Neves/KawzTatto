@@ -22,7 +22,7 @@ export default function useConversationViewModel(
       const result = await gateway.openConversation({
         clientId: client.id,
         phone: client.phone || "",
-        conversationUrl: client.chat || "",
+        conversationUrl: client.chat || client.linkConversa || "",
       })
       if (active.current) onFeedback(result.message)
     } catch {

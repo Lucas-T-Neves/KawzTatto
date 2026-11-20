@@ -131,7 +131,7 @@ export default function FinanceDashboard({
         ].map((label) => (
           <section className={styles.card} key={label}>
             <div className={styles.sectionHead}><div role="heading" aria-level={2}>{label}</div></div>
-            <p role="status">Financeiro ainda não integrado à API. Dados indisponíveis.</p>
+            <p role="status">Dados financeiros indisponíveis no momento.</p>
           </section>
         ))}
       </div>

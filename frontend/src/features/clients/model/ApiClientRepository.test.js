@@ -63,7 +63,7 @@ test("an HTML fallback is reported as an invalid API response", async () => {
     status: 200, headers: { "Content-Type": "text/html" },
   })
   try {
-    await assert.rejects(new ApiClientRepository("token").list(), /resposta inválida/)
+    await assert.rejects(new ApiClientRepository("token").list(), /resposta inesperada/)
   } finally { globalThis.fetch = original }
 })
 

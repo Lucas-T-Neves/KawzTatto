@@ -41,7 +41,7 @@ export default function useApiContractsViewModel(token, projectId, clientId, ena
       const saved = await repository.save(form)
       const normalized = {
         id: String(saved.id),
-        name: `Contrato · ${form.projectId || "Projeto"}`,
+        name: `Contrato ${form.projectId || "Projeto"}`,
         projectId: form.projectId,
         clientId: form.clientId,
         status: saved.statusContrato || "Rascunho",
