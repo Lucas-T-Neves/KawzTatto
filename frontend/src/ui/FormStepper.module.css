@@ -1,0 +1,35 @@
+.root {
+  --wizard-marker-size: var(--control-height);
+  --wizard-line-size: calc(var(--space-xs) / 2);
+  display:flex;
+  flex-direction:column;
+  gap:var(--space-2xl);
+  width:100%;
+  min-width:0;
+  font-family:var(--font-sans);
+}
+.progress { display:flex; align-items:flex-start; position:relative; isolation:isolate; list-style:none; margin:var(--space-md) 0 var(--space-lg); padding:0; min-width:0; }
+.compactProgress .progress { width:calc(100% / 3); margin-inline:auto; }
+.progress::before, .progress::after { content:""; position:absolute; top:calc((var(--wizard-marker-size) - var(--wizard-line-size)) / 2); left:calc(var(--wizard-marker-size) / 2); height:var(--wizard-line-size); z-index:-1; }
+.progress::before { right:calc(var(--wizard-marker-size) / 2); background:var(--border-primary); }
+.progress::after { width:calc((100% - var(--wizard-marker-size)) * var(--wizard-progress, 0)); background:var(--status-positive-text); transition:width .2s ease; }
+.progress:has(> li:only-child)::before, .progress:has(> li:only-child)::after { display:none; }
+.step { display:flex; flex-direction:column; align-items:center; gap:var(--space-md); flex:1; min-width:0; text-align:center; }
+.step:first-child { align-items:flex-start; text-align:left; }
+.step:last-child { align-items:flex-end; text-align:right; }
+.step:only-child { align-items:flex-start; text-align:left; }
+.marker { display:flex; align-items:center; justify-content:center; width:var(--wizard-marker-size); height:var(--wizard-marker-size); flex-shrink:0; border:solid var(--border-primary); border-width:var(--control-border-width); border-radius:var(--corner-full); background:var(--surface-bg); color:var(--text-secondary); font-size:var(--text-sm); font-weight:var(--font-weight-semibold); }
+.stepTitle { display:block; color:var(--text-secondary); font-size:var(--text-xs); font-weight:var(--font-weight-medium); line-height:var(--leading-normal); max-width:100%; overflow-wrap:anywhere; }
+.step[data-state="active"] .marker { color:var(--input-bg); background:var(--status-positive-text); border-color:var(--status-positive-text); }
+.step[data-state="active"] .stepTitle { color:var(--status-positive-text); font-weight:var(--font-weight-semibold); }
+.step[data-state="complete"] .marker { color:var(--status-positive-text); border-color:var(--status-positive-text); background:var(--status-positive-bg); }
+.step[data-state="complete"] .stepTitle { color:var(--status-positive-text); }
+.check { width:var(--space-xl); height:var(--space-xl); }
+.actions { display:flex; align-items:center; justify-content:flex-end; flex-wrap:wrap; gap:var(--space-lg); width:100%; min-width:0; }
+.actions .continue, .actions .back { min-width:0; height:var(--control-height); padding:var(--space-sm) var(--space-lg); font-size:var(--text-sm); font-weight:var(--font-weight-normal); justify-content:center; gap:0; }
+.arrow { width:calc(var(--space-xl) + var(--space-xs)); height:calc(var(--space-xl) + var(--space-xs)); flex-shrink:0; }
+@media(max-width:640px) {
+  .root { --wizard-marker-size:var(--control-small-height); gap:var(--space-xl); }
+  .actions { gap:var(--space-md); }
+  .stepTitle { font-size:var(--text-xs); }
+}

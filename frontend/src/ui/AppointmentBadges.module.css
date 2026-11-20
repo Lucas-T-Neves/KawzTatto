@@ -1,0 +1,13 @@
+.badges { display:inline-flex; align-items:center; justify-content:flex-end; gap:var(--space-sm); flex-shrink:0; margin-inline-start:auto; white-space:nowrap; }
+.badges .task {
+  color:var(--appointment-task-accent);
+  background:var(--appointment-task-bg);
+  border:solid color-mix(in srgb,var(--appointment-task-accent) 35%,transparent);
+  border-width:var(--control-border-width);
+}
+.badges .event {
+  color:var(--appointment-event-accent);
+  background:var(--appointment-event-bg);
+  border:solid color-mix(in srgb,var(--appointment-event-accent) 35%,transparent);
+  border-width:var(--control-border-width);
+}

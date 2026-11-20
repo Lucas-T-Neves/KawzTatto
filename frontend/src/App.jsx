@@ -21,11 +21,16 @@ import {
   IconButton,
 } from "./ui/index.jsx"
 import FormStepper from "./ui/FormStepper.jsx"
+import AppointmentBadges from "./ui/AppointmentBadges.jsx"
 import Calendar from "./Calendar.jsx"
 import ProjectImageField from "./features/projects/view/ProjectImageField.jsx"
 import ProjectSelectField from "./features/projects/view/ProjectSelectField.jsx"
 import {
   ArrowLeft,
+  ChevronLeft,
+  ChevronRight,
+  Eye,
+  EyeOff,
   LogOut,
   Pencil,
   Plus,
@@ -46,6 +51,7 @@ import {
   stepForSection,
   validateForm,
   validateFormStep,
+  visibleFormFields,
 } from "./features/studio/model/formConfiguration.js"
 import { studioDashboard } from "./features/studio/model/studioDashboard.js"
 const pages = ["Início", "Agenda", "Clientes", "Projetos", "Financeiro"]
@@ -103,7 +109,6 @@ const pageIcons = {
   ),
 }
 const pipeline = [
-  "Rascunho",
   "A iniciar",
   "Em andamento",
   "Finalizado",
@@ -117,6 +122,24 @@ const followTypes = [
   "Nova sessão",
   "Relacionamento",
 ]
+const paginationItems = (currentPage, totalPages) => {
+  if (totalPages <= 7) {
+    return Array.from({ length: totalPages }, (_, index) => index + 1)
+  }
+  if (currentPage <= 4) return [1, 2, 3, 4, "ellipsis-right", totalPages]
+  if (currentPage >= totalPages - 3) {
+    return [1, "ellipsis-left", totalPages - 3, totalPages - 2, totalPages - 1, totalPages]
+  }
+  return [
+    1,
+    "ellipsis-left",
+    currentPage - 1,
+    currentPage,
+    currentPage + 1,
+    "ellipsis-right",
+    totalPages,
+  ]
+}
 const today = () => new Date().toLocaleDateString("en-CA")
 const money = (value) =>
   value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
@@ -300,7 +323,7 @@ export function Workspace({ onExit, profile, page }) {
   }
   const open = (key, entry, defaults = {}, options = {}) => {
     if (key === "Agenda" && !apiMode) {
-      setNotice("Configure VITE_API_BASE_URL para cadastrar na agenda.")
+      setNotice("Não foi possível cadastrar na agenda no momento.")
       return
     }
     if (!["Clientes", "Projetos", "Agenda", "Orçamentos", "Financeiro", "Acompanhamentos", "Contratos"].includes(key)) return
@@ -316,8 +339,10 @@ export function Workspace({ onExit, profile, page }) {
         status:
           key === "Clientes" && apiClientPage ? "" : key === "Financeiro"
             ? "Pago"
-            : key === "Projetos" || key === "Orçamentos"
-              ? "Rascunho"
+            : key === "Projetos"
+              ? "A iniciar"
+              : key === "Orçamentos"
+                ? "Rascunho"
               : key === "Acompanhamentos"
                 ? "Pendente"
                 : "A confirmar",
@@ -346,6 +371,43 @@ export function Workspace({ onExit, profile, page }) {
   const clientStatus = (id) =>
     (apiClients.client?.id === id ? apiClients.client.status : find("Clientes", id)?.status) || ""
   const status = (item) => item.status || ""
+  const normalizedStatus = (value) =>
+    String(value || "")
+      .replaceAll("_", " ")
+      .trim()
+      .toLocaleLowerCase("pt-BR")
+  const normalizedProjectStatus = (value) => {
+    const normalized = normalizedStatus(value)
+    if (["orcamento", "planejamento"].includes(normalized)) return "a iniciar"
+    if (normalized === "em andamento") return "em andamento"
+    if (normalized === "concluido") return "finalizado"
+    if (normalized === "cancelado") return "cancelado"
+    return normalized
+  }
+  const projectStatusLabel = (value) => {
+    const normalized = normalizedProjectStatus(value)
+    if (!normalized) return ""
+    return normalized[0].toLocaleUpperCase("pt-BR") + normalized.slice(1)
+  }
+  const statusLabel = (value) => {
+    const normalized = normalizedStatus(value)
+    if (!normalized) return ""
+    return normalized[0].toLocaleUpperCase("pt-BR") + normalized.slice(1)
+  }
+  const projectStatusClass = (value) => {
+    switch (normalizedProjectStatus(value)) {
+      case "a iniciar":
+        return "project-status-starting"
+      case "em andamento":
+        return "project-status-progress"
+      case "finalizado":
+        return "project-status-finished"
+      case "cancelado":
+        return "project-status-cancelled"
+      default:
+        return ""
+    }
+  }
   const sessionStatus = status
   const save = async () => {
     if (!["Clientes", "Projetos", "Agenda", "Orçamentos", "Financeiro", "Acompanhamentos", "Contratos"].includes(editor)) return
@@ -360,13 +422,13 @@ export function Workspace({ onExit, profile, page }) {
       if (editor === "Clientes") {
         const saved = await apiClients.save(form)
         setEditor("")
-        setNotice("Cliente salvo na API.")
-        routerNavigate(`${paths.Clientes}/${saved.id}`, { state: { notice: "Cliente salvo na API." } })
+        setNotice("Cliente salvo com sucesso.")
+        routerNavigate(`${paths.Clientes}/${saved.id}`, { state: { notice: "Cliente salvo com sucesso." } })
       } else if (editor === "Projetos") {
         const saved = await apiProjects.save(form)
         setEditor("")
-        setNotice("Projeto salvo na API.")
-        routerNavigate(`${paths.Projetos}/${saved.id}`, { state: { notice: "Projeto salvo na API." } })
+        setNotice("Projeto salvo com sucesso.")
+        routerNavigate(`${paths.Projetos}/${saved.id}`, { state: { notice: "Projeto salvo com sucesso." } })
       } else if (editor === "Agenda") {
         const saved = await apiAgenda.save(form)
         setEditor("")
@@ -376,19 +438,19 @@ export function Workspace({ onExit, profile, page }) {
       } else if (editor === "Orçamentos") {
         await apiBudgets.save(form)
         setEditor("")
-        setNotice("Orçamento salvo na API.")
+        setNotice("Orçamento salvo com sucesso.")
       } else if (editor === "Financeiro") {
         await apiFinance.save(form)
         setEditor("")
-        setNotice("Movimentação salva na API.")
+        setNotice("Movimentação salva com sucesso.")
       } else if (editor === "Acompanhamentos") {
         await apiFollowUps.save(form)
         setEditor("")
-        setNotice("Acompanhamento salvo na API.")
+        setNotice("Acompanhamento salvo com sucesso.")
       } else if (editor === "Contratos") {
         await apiContracts.save(form)
         setEditor("")
-        setNotice("Contrato salvo na API.")
+        setNotice("Contrato salvo com sucesso.")
       }
     } catch (failure) {
       setError(failure.message)
@@ -423,6 +485,11 @@ export function Workspace({ onExit, profile, page }) {
   const editorSteps = editor ? getFormSteps(editor, form) : []
   const activeStep = editorSteps[stepIndex] || null
   const activeStepFields = activeStep ? fieldsForStep(editor, form, activeStep.id) : []
+  const singlePageEditor = editor === "Agenda" && form.kind !== "Sessão"
+  const singlePageFields =
+    singlePageEditor && editor
+      ? visibleFormFields(editor, form, "") || []
+      : []
   const savingInEditor =
     (editor === "Clientes" && apiClients.saving) ||
     (editor === "Projetos" && apiProjects.saving) ||
@@ -577,19 +644,24 @@ export function Workspace({ onExit, profile, page }) {
                     </span>
                   </>
                 )}
-                {key !== "Orçamentos" && (
-                  <span
-                    className={cssClass(
-                      `tag ${statusTone(state)} ${
-                        key === "Projetos" ? "tag-project-status" : ""
-                      }`,
-                    )}
-                  >
-                    {key === "Financeiro"
-                      ? `${money(number(item.value))} · ${state}`
-                      : state}
-                  </span>
-                )}
+                {key !== "Orçamentos" &&
+                  (key === "Agenda" ? (
+                    <AppointmentBadges kind={item.kind} status={state} />
+                  ) : (
+                    <span
+                      className={cssClass(
+                        `tag ${statusTone(state)} ${key === "Projetos" ? `tag-project-status ${projectStatusClass(state)}` : ""}`,
+                      )}
+                    >
+                      {key === "Financeiro"
+                        ? `${money(number(item.value))} · ${state}`
+                        : key === "Projetos"
+                          ? projectStatusLabel(state)
+                          : key === "Clientes"
+                          ? statusLabel(state)
+                          : state}
+                    </span>
+                  ))}
               </span>
             </Button>
           )
@@ -893,16 +965,12 @@ export function Workspace({ onExit, profile, page }) {
                 {effectiveContext && (
                   <span
                     className={cssClass(
-                      `tag ${statusTone(page === "Projetos" ? status(effectiveContext) : clientStatus(effectiveContext.id))} ${
-                        page === "Projetos"
-                          ? "tag-project-status"
-                          : ""
-                      }`,
+                      `tag ${statusTone(page === "Projetos" ? status(effectiveContext) : clientStatus(effectiveContext.id))} ${page === "Projetos" ? `tag-project-status ${projectStatusClass(status(effectiveContext))}` : ""}`,
                     )}
                   >
                     {page === "Projetos"
-                      ? status(effectiveContext)
-                      : clientStatus(effectiveContext.id)}
+                      ? projectStatusLabel(status(effectiveContext))
+                      : statusLabel(clientStatus(effectiveContext.id))}
                   </span>
                 )}
                 {effectiveContext && page === "Projetos" && (
@@ -926,7 +994,7 @@ export function Workspace({ onExit, profile, page }) {
                 !context && (
                   <Button
                     disabled={!(["Clientes", "Projetos"].includes(page))}
-                    title={!(["Clientes", "Projetos"].includes(page)) ? "Funcionalidade ainda não integrada à API" : undefined}
+                    title={!(["Clientes", "Projetos"].includes(page)) ? "Funcionalidade indisponível no momento" : undefined}
                     onClick={() =>
                       open(
                         context
@@ -956,11 +1024,11 @@ export function Workspace({ onExit, profile, page }) {
             </div>
           </div>
             {selected && !context && page !== "Clientes" && !["Clientes", "Projetos"].includes(page) ? (
-              <Panel title={page}><p role="status">Esta ficha ainda não está integrada à API.</p><Button as={Link} to={paths[page]} variant="neutral">Voltar para {page.toLowerCase()}</Button></Panel>
+              <Panel title={page}><p role="status">Este conteúdo ainda não está disponível.</p><Button as={Link} to={paths[page]} variant="neutral">Voltar para {page.toLowerCase()}</Button></Panel>
             ) : selected && !context && page !== "Clientes" ? (
               (apiClientPage ? apiClients.detailState : apiProjects.detailState) === "notFound" ? (
               <Panel title="Registro não encontrado">
-                <p>{apiClientPage ? "Não foi possível encontrar este cliente na API." : "Não foi possível encontrar este projeto na API."}</p>
+                <p>{apiClientPage ? "Cliente não encontrado." : "Projeto não encontrado."}</p>
                 <Button as={Link} to={paths[page]} variant="neutral">Voltar para {page.toLowerCase()}</Button>
               </Panel>
               ) : (apiClientPage ? apiClients.detailState : apiProjects.detailState) === "error" ? (
@@ -979,7 +1047,7 @@ export function Workspace({ onExit, profile, page }) {
                 }
               >
                  {!apiMode ? (
-                   <p role="status">Compromissos ainda não integrados à API.</p>
+                    <p role="status">Compromissos indisponíveis no momento.</p>
                  ) : apiAgenda.listState === "error" ? (
                    <p role="alert">{apiAgenda.loadError}</p>
                  ) : apiAgenda.listState !== "success" ? (
@@ -1060,11 +1128,11 @@ export function Workspace({ onExit, profile, page }) {
                           disabled={!context || apiClients.saving}
                           onClick={async () => {
                             if (!context) return
-                            if (!window.confirm(`Excluir ${context.name} da API?`)) return
+                            if (!window.confirm(`Excluir ${context.name}?`)) return
                             try {
                               await apiClients.remove(context.id)
                               routerNavigate(paths.Clientes, {
-                                state: { notice: "Cliente excluído da API." },
+                                state: { notice: "Cliente excluído com sucesso." },
                               })
                             } catch (failure) {
                               setNotice(failure.message)
@@ -1125,11 +1193,11 @@ export function Workspace({ onExit, profile, page }) {
                           disabled={!context || apiProjects.saving}
                           onClick={async () => {
                             if (!context) return
-                            if (!window.confirm(`Excluir ${context.name} da API?`)) return
+                            if (!window.confirm(`Excluir ${context.name}?`)) return
                             try {
                               await apiProjects.remove(context.id)
                               routerNavigate(paths.Projetos, {
-                                state: { notice: "Projeto excluído da API." },
+                                state: { notice: "Projeto excluído com sucesso." },
                               })
                             } catch (failure) {
                               setNotice(failure.message)
@@ -1176,7 +1244,9 @@ export function Workspace({ onExit, profile, page }) {
                             {key === "clientId" ? (
                               find("Clientes", effectiveContext.clientId)?.name
                             ) : key === "status" ? (
-                              status(effectiveContext)
+                              page === "Projetos"
+                                ? projectStatusLabel(status(effectiveContext))
+                                : statusLabel(status(effectiveContext))
                             ) : (
                               effectiveContext[key] || "Não informado"
                             )}
@@ -1325,7 +1395,7 @@ export function Workspace({ onExit, profile, page }) {
                         onClick={() =>
                           open("Orçamentos", undefined, {
                             ...defaults,
-                            name: `Orçamento · ${effectiveContext.name}`,
+                            name: `Orçamento ${effectiveContext.name}`,
                             deposit: "0",
                             estimate: effectiveContext.estimate || "1",
                             expires: effectiveContext.expires || "",
@@ -1408,7 +1478,7 @@ export function Workspace({ onExit, profile, page }) {
                         onClick={() =>
                           open("Contratos", undefined, {
                             ...defaults,
-                            name: `Contrato · ${effectiveContext.name}`,
+                            name: `Contrato ${effectiveContext.name}`,
                           })
                         }
                       />
@@ -1422,7 +1492,7 @@ export function Workspace({ onExit, profile, page }) {
            ) : page === "Agenda" ? (
              !apiMode ? (
                <>
-                 <p role="status">A agenda ainda não está integrada à API. Nenhuma atividade pode ser consultada ou cadastrada aqui.</p>
+                 <p role="status">A agenda está indisponível no momento.</p>
                  <Calendar
                    unavailable
                    view={view}
@@ -1480,8 +1550,8 @@ export function Workspace({ onExit, profile, page }) {
                    aria-label="Pesquisar"
                    placeholder={
                       page === "Clientes"
-                        ? "nome, contato ou status"
-                        : "nome do projeto"
+                        ? "Nome, contato ou status"
+                        : "Nome do projeto"
                     }
                   prefix={<Search className={cssClass("control-icon")} />}
                   value={query}
@@ -1521,11 +1591,53 @@ export function Workspace({ onExit, profile, page }) {
                 ),
                 page,
               )}
-               {apiCollectionPage && <div className={cssClass("action-row")}>
-                  <Button variant="neutral" disabled={activeApiViewModel.pageIndex === 0} onClick={() => activeApiViewModel.setPageIndex(activeApiViewModel.pageIndex - 1)}>Anterior</Button>
-                  <span>Página {activeApiViewModel.pageIndex + 1} de {Math.max(1, activeApiViewModel.totalPages)}</span>
-                  <Button variant="neutral" disabled={activeApiViewModel.pageIndex + 1 >= activeApiViewModel.totalPages} onClick={() => activeApiViewModel.setPageIndex(activeApiViewModel.pageIndex + 1)}>Próxima</Button>
-               </div>}
+               {apiCollectionPage && (() => {
+                 const totalPages = Math.max(1, activeApiViewModel.totalPages)
+                 const currentPage = activeApiViewModel.pageIndex + 1
+                 return (
+                   <nav className={cssClass("pagination")} aria-label={`Paginação de ${page.toLowerCase()}`}>
+                     <div className={cssClass("pagination-pages")}>
+                       {paginationItems(currentPage, totalPages).map((item, index) =>
+                         typeof item === "string" ? (
+                           <span key={`${item}-${index}`} className={cssClass("pagination-ellipsis")} aria-hidden="true">...</span>
+                         ) : (
+                           <Button
+                             key={item}
+                             size="small"
+                             variant={item === currentPage ? "primary" : "neutral"}
+                             className={cssClass("pagination-number")}
+                             aria-current={item === currentPage ? "page" : undefined}
+                             disabled={item === currentPage}
+                             onClick={() => activeApiViewModel.setPageIndex(item - 1)}
+                           >
+                             {item}
+                           </Button>
+                         ),
+                       )}
+                     </div>
+                     <div className={cssClass("pagination-arrows")}>
+                       <IconButton
+                         variant="neutral"
+                         size="small"
+                         aria-label="Página anterior"
+                         title="Página anterior"
+                         icon={<ChevronLeft className={cssClass("control-icon")} />}
+                         disabled={currentPage <= 1}
+                         onClick={() => activeApiViewModel.setPageIndex(activeApiViewModel.pageIndex - 1)}
+                       />
+                       <IconButton
+                         variant="neutral"
+                         size="small"
+                         aria-label="Próxima página"
+                         title="Próxima página"
+                         icon={<ChevronRight className={cssClass("control-icon")} />}
+                         disabled={currentPage >= totalPages}
+                         onClick={() => activeApiViewModel.setPageIndex(activeApiViewModel.pageIndex + 1)}
+                       />
+                     </div>
+                   </nav>
+                 )
+               })()}
             </Panel>
           )}
         </main>
@@ -1533,12 +1645,13 @@ export function Workspace({ onExit, profile, page }) {
       <Modal
         className={cssClass("floating-glass")}
         isOpen={!!editor}
+        lockBodyScroll={singlePageEditor}
         title={
           editor === "Financeiro"
             ? form.kind === "Despesa"
               ? "Registrar gasto"
               : "Registrar pagamento"
-            : `${form.id ? "Editar" : "Cadastrar"} · ${
+            : `${form.id ? "Editar" : "Cadastrar"} ${
                 editor === "Agenda" ? form.kind : editor
               }`
         }
@@ -1552,6 +1665,7 @@ export function Workspace({ onExit, profile, page }) {
           <div className={cssClass("editor-footer") }>
             <Button
               variant="neutral"
+              className={cssClass("editor-cancel")}
               onClick={() => {
                 setEditor("")
                 setFieldErrors({})
@@ -1560,32 +1674,59 @@ export function Workspace({ onExit, profile, page }) {
             >
               Cancelar
             </Button>
-            <FormStepper
-              steps={editorSteps}
-              currentIndex={stepIndex}
-              onBack={goBackStep}
-              onNext={advanceStep}
-              onFinish={save}
-              finishing={savingInEditor}
-              className={cssClass("editor-stepper")}
-            />
+            {singlePageEditor ? (
+              <Button onClick={save} disabled={savingInEditor}>
+                {savingInEditor
+                  ? "Salvando…"
+                  : form.id
+                    ? "Salvar alterações"
+                    : "Finalizar cadastro"}
+              </Button>
+            ) : (
+              <FormStepper
+                display="actions"
+                editing={Boolean(form.id)}
+                steps={editorSteps}
+                currentIndex={stepIndex}
+                onBack={goBackStep}
+                onNext={advanceStep}
+                onFinish={save}
+                finishing={savingInEditor}
+                className={cssClass("editor-stepper")}
+              />
+            )}
           </div>
         }
       >
         <div
           className={cssClass(
-            editor === "Agenda"
-              ? "activity-editor"
-              : editor === "Clientes"
-                ? "client-editor"
-                : ["Projetos", "Orçamentos"].includes(editor)
-                  ? "project-editor"
-                  : "",
+            `wizard-editor ${
+              editor === "Agenda"
+                ? "activity-editor"
+                : editor === "Clientes"
+                  ? "client-editor"
+                  : ["Projetos", "Orçamentos"].includes(editor)
+                    ? "project-editor"
+                    : ""
+            }`,
           )}
         >
-          <div className={cssClass("editor-fields")}>
+          {!singlePageEditor && (
+            <FormStepper
+              display="progress"
+              compactProgress={editor === "Clientes" && !form.id}
+              steps={editorSteps}
+              currentIndex={stepIndex}
+              editing={Boolean(form.id)}
+            />
+          )}
+          <div className={cssClass("editor-fields wizard-fields")}>
             {(fields[editor] || [])
-              .filter(([key]) => !activeStep || activeStepFields.includes(key))
+              .filter(([key]) =>
+                singlePageEditor
+                  ? singlePageFields.includes(key)
+                  : !activeStep || activeStepFields.includes(key),
+              )
               .map(([key, originalLabel, type]) => {
                 const label =
                   editor === "Agenda" &&
@@ -1823,7 +1964,7 @@ export function Workspace({ onExit, profile, page }) {
                         projectId: detail.projectId,
                         clientId: detail.clientId,
                         sessionId: detail.sourceId || detail.id,
-                        name: `Pagamento · ${detail.name}`,
+                        name: `Pagamento ${detail.name}`,
                       })
                   }
                 >
@@ -1857,14 +1998,14 @@ export function Workspace({ onExit, profile, page }) {
           >
             {detail.collection === "Contratos" && (
               <>
-                <p>MINUTA · {detail.id}</p>
+                <p>MINUTA {detail.id}</p>
                 <p>
-                  Cliente: {find("Clientes", detail.clientId)?.name} · Projeto:{" "}
+                  Cliente: {find("Clientes", detail.clientId)?.name} - Projeto:{" "}
                   {find("Projetos", detail.projectId)?.name}
                 </p>
                 <p>
                   Valor:{" "}
-                  {money(number(find("Projetos", detail.projectId)?.total))} ·
+                  {money(number(find("Projetos", detail.projectId)?.total))} -
                   Sinal:{" "}
                   {money(number(find("Projetos", detail.projectId)?.deposit))}
                 </p>
@@ -1917,6 +2058,7 @@ export function Workspace({ onExit, profile, page }) {
 }
 export function LocalAccess({ onEnter }) {
   const { mode, name, setName, email, setEmail, password, setPassword, submitting, error, changeMode, submit } = useAccessViewModel(onEnter)
+  const [showPassword, setShowPassword] = useState(false)
   return (
     <main className={cssClass("local-access")}>
       <section className={cssClass("local-access-card floating-glass")}>
@@ -1961,13 +2103,26 @@ export function LocalAccess({ onEnter }) {
           <InputField
             id="local-profile-password"
             label="Senha"
-            type="password"
+            type={showPassword ? "text" : "password"}
             value={password}
             onChange={setPassword}
             autoComplete={
               mode === "login" ? "current-password" : "new-password"
             }
             placeholder="Sua senha"
+            suffixInteractive
+            suffix={<button
+              type="button"
+              data-adornment-button
+              aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+              aria-pressed={showPassword}
+              disabled={submitting}
+              onClick={() => {
+                setShowPassword((current) => !current)
+              }}
+            >
+              {showPassword ? <EyeOff data-adornment-icon /> : <Eye data-adornment-icon />}
+            </button>}
             required
             disabled={submitting}
           />
@@ -2017,8 +2172,8 @@ export default function App() {
       ) : apiMode ? <LocalAccess onEnter={setProfile} /> : (
         <main className={cssClass("local-access")}>
           <section className={cssClass("local-access-card floating-glass")} role="status">
-            <h1>API não configurada</h1>
-            <p>Configure VITE_API_BASE_URL no build para habilitar o login e os dados de Clientes.</p>
+            <h1>Serviço indisponível</h1>
+            <p>No momento não foi possível carregar o sistema. Tente novamente mais tarde.</p>
           </section>
         </main>
       )}

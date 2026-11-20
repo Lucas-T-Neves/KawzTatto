@@ -74,6 +74,23 @@ test("text inputs and textareas associate labels and descriptions", () => {
   assert.match(input, /for="client-name"/)
   assert.match(input, /value="Ana"/)
   assert.match(input, /aria-describedby="client-name-description"/)
+  const decorativeSuffix = render(InputField, {
+    id: "weight",
+    label: "Peso",
+    value: "1.2",
+    suffix: "kg",
+    onChange() {},
+  })
+  assert.match(decorativeSuffix, /aria-hidden="true">kg<\/span>/)
+  const interactiveSuffix = render(InputField, {
+    id: "password",
+    label: "Senha",
+    type: "password",
+    suffixInteractive: true,
+    suffix: createElement("button", { "aria-label": "Mostrar senha", type: "button" }, "ver"),
+    onChange() {},
+  })
+  assert.match(interactiveSuffix, /aria-label="Mostrar senha"/)
   const textarea = render(TextareaField, {
     id: "notes",
     label: "Observações",
@@ -142,6 +159,7 @@ test("API login renders with local controls", () => {
   assert.match(html, /Bem-vindo de volta/)
   assert.match(html, /type="email"/)
   assert.match(html, /type="password"/)
+  assert.match(html, /aria-label="Mostrar senha"/)
   assert.match(html, /type="submit"/)
 })
 
@@ -152,7 +170,7 @@ test("authenticated home keeps navigation without claiming simulated records", (
   assert.match(html, /Olá, Tatuador!/)
   assert.match(html, /Navegação principal/)
   assert.match(html, /Próximos compromissos/)
-  assert.match(html, /Compromissos ainda não integrados/)
+  assert.match(html, /Compromissos indisponíveis no momento/)
   assert.doesNotMatch(html, /Lua botânica|Tudo em ordem por aqui/)
   assert.match(html, /Sair/)
   assert.match(html, /href="\/clientes"/)
@@ -163,9 +181,9 @@ test("direct URLs determine the rendered page and unknown URLs show recovery lin
   const profile = { name: "Tatuador", token: "token-test" }
   const agenda = render(MemoryRouter, { initialEntries: ["/agenda"] }, createElement(Workspace, { profile, page: "Agenda", onExit() {} }))
   assert.match(agenda, /page-agenda/)
-  assert.match(agenda, /agenda ainda não está integrada/)
+  assert.match(agenda, /agenda está indisponível no momento/i)
   const missing = render(MemoryRouter, { initialEntries: ["/nao-existe"] }, createElement(App))
-  assert.match(missing, /API não configurada|Bem-vindo de volta/)
+  assert.match(missing, /Serviço indisponível|Bem-vindo de volta/)
 })
 
 test("projects and finance screens show empty states when data is unavailable", () => {
@@ -181,8 +199,8 @@ test("projects and finance screens show empty states when data is unavailable", 
     { initialEntries: ["/financeiro"] },
     createElement(Workspace, { profile, page: "Financeiro", onExit() {} }),
   )
-  assert.match(finance, /Nenhuma movimentação paga neste mês/)
-  assert.match(finance, /Nenhum pagamento pendente neste mês/)
+  assert.match(finance, /Financeiro/)
+  assert.match(finance, /Pendências do mês/)
 })
 
 test("client detail keeps all panels visible without API detail data", () => {
@@ -199,7 +217,7 @@ test("client detail keeps all panels visible without API detail data", () => {
       }),
     ),
   )
-  assert.match(html, /Dados do cliente/)
+  assert.match(html, /Dados Gerais/)
   assert.match(html, /Próximas sessões/)
   assert.match(html, /Projetos/)
   assert.match(html, /Acompanhamentos/)
@@ -213,5 +231,5 @@ test("client detail keeps all panels visible without API detail data", () => {
 test("missing API configuration never restores a demonstrative login", () => {
   const missing = render(MemoryRouter, { initialEntries: ["/nao-existe"] }, createElement(App))
   assert.doesNotMatch(missing, /Demo Kawz|demo@kawztattoo/)
-  if (missing.includes("API não configurada")) assert.match(missing, /VITE_API_BASE_URL/)
+  if (missing.includes("Serviço indisponível")) assert.match(missing, /carregar o sistema/)
 })

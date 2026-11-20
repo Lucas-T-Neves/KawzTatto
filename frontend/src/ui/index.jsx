@@ -78,6 +78,7 @@ export function InputField({
   description,
   prefix,
   suffix,
+  suffixInteractive = false,
   disabled,
   className,
   id,
@@ -101,7 +102,9 @@ export function InputField({
             {label}
           </label>
         )}
-        <div className={styles.controlFrame}>
+        <div
+          className={styles.controlFrame}
+        >
           {prefix && (
             <span className={styles.fieldAdornment} aria-hidden="true">
               {prefix}
@@ -118,7 +121,13 @@ export function InputField({
             onChange={(event) => onChange?.(event.target.value)}
           />
           {suffix && (
-            <span className={styles.fieldAdornment} aria-hidden="true">
+            <span
+              className={classes(
+                styles.fieldAdornment,
+                suffixInteractive && styles.fieldAdornmentInteractive,
+              )}
+              {...(suffixInteractive ? {} : { "aria-hidden": "true" })}
+            >
               {suffix}
             </span>
           )}
@@ -308,6 +317,7 @@ export function Modal({
   footer,
   size = "medium",
   className,
+  lockBodyScroll = false,
 }) {
   const dialog = useRef(null)
   const titleId = useId()
@@ -355,7 +365,14 @@ export function Modal({
               icon={<X className={styles.controlIcon} />}
             />
           </div>
-          <div className={styles.modalBody}>{children}</div>
+          <div
+            className={classes(
+              styles.modalBody,
+              lockBodyScroll && styles.modalBodyLocked,
+            )}
+          >
+            {children}
+          </div>
           {footer && <div className={styles.modalFooter}>{footer}</div>}
         </section>
       )}
