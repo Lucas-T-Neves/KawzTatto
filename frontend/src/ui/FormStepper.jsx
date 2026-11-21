@@ -12,7 +12,6 @@ export default function FormStepper({
   className = "",
   display = "all",
   editing = false,
-  compactProgress = false,
 }) {
   if (!steps?.length) return null
   const lastIndex = steps.length - 1
@@ -20,9 +19,7 @@ export default function FormStepper({
   const progress = steps.length > 1 ? Math.min(1, currentIndex / lastIndex) : 0
   return (
     <div
-      className={`${styles.root} ${
-        compactProgress ? styles.compactProgress : ""
-      } ${className}`}
+      className={`${styles.root} ${className}`}
     >
       {display !== "actions" && (
         <>

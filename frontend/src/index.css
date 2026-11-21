@@ -25,10 +25,10 @@
   --danger: #cf2828;
   --color-blue-700: oklch(48.8% .243 264.376);
   --modal-scrim: #000000bf;
-  --control-height: calc(var(--space-2xl) + var(--space-xl));
-  --control-small-height: calc(var(--space-2xl) + var(--space-md));
+  --control-height: 44px;
+  --control-small-height: 40px;
   --control-border-width: calc(var(--space-xs) / 4);
-  --font-size-reduction: 2px;
+  --font-size-reduction: 0px;
   --text-xs: calc(12px - var(--font-size-reduction));
   --text-sm: calc(14px - var(--font-size-reduction));
   --text-base: calc(16px - var(--font-size-reduction));

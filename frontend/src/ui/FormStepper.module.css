@@ -9,7 +9,6 @@
   font-family:var(--font-sans);
 }
 .progress { display:flex; align-items:flex-start; position:relative; isolation:isolate; list-style:none; margin:var(--space-md) 0 var(--space-lg); padding:0; min-width:0; }
-.compactProgress .progress { width:calc(100% / 3); margin-inline:auto; }
 .progress::before, .progress::after { content:""; position:absolute; top:calc((var(--wizard-marker-size) - var(--wizard-line-size)) / 2); left:calc(var(--wizard-marker-size) / 2); height:var(--wizard-line-size); z-index:-1; }
 .progress::before { right:calc(var(--wizard-marker-size) / 2); background:var(--border-primary); }
 .progress::after { width:calc((100% - var(--wizard-marker-size)) * var(--wizard-progress, 0)); background:var(--status-positive-text); transition:width .2s ease; }

@@ -313,6 +313,7 @@ export function Modal({
   isOpen,
   onClose,
   title,
+  headerContent,
   children,
   footer,
   size = "medium",
@@ -348,22 +349,32 @@ export function Modal({
     >
       {isOpen && (
         <section className={classes(styles.modalPanel, className)}>
-          <div className={styles.modalHeader}>
-            <div
-              id={titleId}
-              role="heading"
-              aria-level={2}
-              className={styles.modalTitle}
-            >
-              {title}
+          <div
+            className={classes(
+              styles.modalHeader,
+              headerContent && styles.modalHeaderWithContent,
+            )}
+          >
+            <div className={styles.modalHeaderMain}>
+              <div
+                id={titleId}
+                role="heading"
+                aria-level={2}
+                className={styles.modalTitle}
+              >
+                {title}
+              </div>
+              <IconButton
+                variant="subtle"
+                size="small"
+                aria-label="Fechar janela"
+                onClick={onClose}
+                icon={<X className={styles.controlIcon} />}
+              />
             </div>
-            <IconButton
-              variant="subtle"
-              size="small"
-              aria-label="Fechar janela"
-              onClick={onClose}
-              icon={<X className={styles.controlIcon} />}
-            />
+            {headerContent && (
+              <div className={styles.modalHeaderContent}>{headerContent}</div>
+            )}
           </div>
           <div
             className={classes(

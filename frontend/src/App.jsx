@@ -362,6 +362,13 @@ export function Workspace({ onExit, profile, page }) {
         changes: "5",
         ...defaults,
       }
+    if (
+      !entry &&
+      Object.prototype.hasOwnProperty.call(nextForm, "date") &&
+      !nextForm.date
+    ) {
+      nextForm.date = today()
+    }
     setForm(nextForm)
     const steps = getFormSteps(key, nextForm)
     const preferredStep = options.stepId || stepForSection(key, options.section, nextForm)
@@ -486,6 +493,7 @@ export function Workspace({ onExit, profile, page }) {
   const activeStep = editorSteps[stepIndex] || null
   const activeStepFields = activeStep ? fieldsForStep(editor, form, activeStep.id) : []
   const singlePageEditor = editor === "Agenda" && form.kind !== "Sessão"
+  const showProgressInHeader = !singlePageEditor && editorSteps.length > 0
   const singlePageFields =
     singlePageEditor && editor
       ? visibleFormFields(editor, form, "") || []
@@ -629,11 +637,18 @@ export function Workspace({ onExit, profile, page }) {
                 ) : (
                   <>
                     <span className={cssClass("record-main")}>
-                      <strong>{item.name}</strong>
+                      <strong>
+                        {key === "Projetos" && page === "Projetos"
+                          ? find("Clientes", item.clientId)?.name ||
+                            "Cliente não informado"
+                          : item.name}
+                      </strong>
                       {key === "Projetos" && (
                         <small>
-                          {find("Clientes", item.clientId)?.name ||
-                            "Cliente não informado"}
+                          {page === "Projetos"
+                            ? item.name
+                            : find("Clientes", item.clientId)?.name ||
+                              "Cliente não informado"}
                         </small>
                       )}
                       {key !== "Clientes" && key !== "Projetos" && (
@@ -1076,7 +1091,7 @@ export function Workspace({ onExit, profile, page }) {
                 <Panel
                   className={cssClass(
                     page === "Clientes"
-                      ? "client-information"
+                      ? "client-information client-info-card"
                       : "project-information",
                   )}
                   title={"Dados Gerais"}
@@ -1208,9 +1223,19 @@ export function Workspace({ onExit, profile, page }) {
                     )
                   }
                 >
-                  <dl className={cssClass("detail-grid")}>
-                    {fields[page]
-                      .filter(([key]) =>
+                  <dl
+                    className={cssClass(
+                      `detail-grid ${
+                        page === "Clientes" && tab === "Dados"
+                          ? "client-dados-grid"
+                          : page === "Clientes" && tab === "Preferências"
+                            ? "client-preferences-grid"
+                          : ""
+                      }`,
+                    )}
+                  >
+                    {(() => {
+                      const filteredFields = fields[page].filter(([key]) =>
                         page === "Clientes"
                           ? (tab === "Preferências"
                               ? ["music", "food", "style", "habits", "notes"]
@@ -1237,7 +1262,27 @@ export function Workspace({ onExit, profile, page }) {
                                 ].includes(key)
                               : ["pre", "post"].includes(key),
                       )
-                      .map(([key, label]) => (
+                      const orderedFields =
+                        page === "Clientes" && tab === "Preferências"
+                          ? filteredFields.sort(
+                              ([a], [b]) =>
+                                [
+                                  "music",
+                                  "food",
+                                  "style",
+                                  "habits",
+                                  "notes",
+                                ].indexOf(a) -
+                                [
+                                  "music",
+                                  "food",
+                                  "style",
+                                  "habits",
+                                  "notes",
+                                ].indexOf(b),
+                            )
+                          : filteredFields
+                      return orderedFields.map(([key, label]) => (
                         <div key={key}>
                           <dt>{label}</dt>
                           <dd>
@@ -1252,20 +1297,17 @@ export function Workspace({ onExit, profile, page }) {
                             )}
                           </dd>
                         </div>
-                      ))}
+                      ))
+                    })()}
                   </dl>
                   {page === "Clientes" && tab === "Dados" && (
-                    <div className={cssClass("action-row")}> 
+                    <div className={cssClass("action-row client-actions-row")}> 
                       {(() => {
                         const folderValue =
                           effectiveContext.folder || effectiveContext.linkPasta || ""
                         const folderHref = normalizeUrl(folderValue)
                         return (
                           <>
-                      <ConversationButton
-                        client={effectiveContext}
-                        onFeedback={setNotice}
-                      />
                             {folderHref ? (
                               <Button
                                 as="a"
@@ -1298,6 +1340,10 @@ export function Workspace({ onExit, profile, page }) {
                                 Abrir pasta de referências
                               </Button>
                             )}
+                            <ConversationButton
+                              client={effectiveContext}
+                              onFeedback={setNotice}
+                            />
                           </>
                         )
                       })()}
@@ -1591,53 +1637,50 @@ export function Workspace({ onExit, profile, page }) {
                 ),
                 page,
               )}
-               {apiCollectionPage && (() => {
-                 const totalPages = Math.max(1, activeApiViewModel.totalPages)
-                 const currentPage = activeApiViewModel.pageIndex + 1
-                 return (
-                   <nav className={cssClass("pagination")} aria-label={`Paginação de ${page.toLowerCase()}`}>
-                     <div className={cssClass("pagination-pages")}>
-                       {paginationItems(currentPage, totalPages).map((item, index) =>
-                         typeof item === "string" ? (
-                           <span key={`${item}-${index}`} className={cssClass("pagination-ellipsis")} aria-hidden="true">...</span>
-                         ) : (
-                           <Button
-                             key={item}
-                             size="small"
-                             variant={item === currentPage ? "primary" : "neutral"}
-                             className={cssClass("pagination-number")}
-                             aria-current={item === currentPage ? "page" : undefined}
-                             disabled={item === currentPage}
-                             onClick={() => activeApiViewModel.setPageIndex(item - 1)}
-                           >
-                             {item}
-                           </Button>
-                         ),
-                       )}
-                     </div>
-                     <div className={cssClass("pagination-arrows")}>
-                       <IconButton
-                         variant="neutral"
-                         size="small"
-                         aria-label="Página anterior"
-                         title="Página anterior"
-                         icon={<ChevronLeft className={cssClass("control-icon")} />}
-                         disabled={currentPage <= 1}
-                         onClick={() => activeApiViewModel.setPageIndex(activeApiViewModel.pageIndex - 1)}
-                       />
-                       <IconButton
-                         variant="neutral"
-                         size="small"
-                         aria-label="Próxima página"
-                         title="Próxima página"
-                         icon={<ChevronRight className={cssClass("control-icon")} />}
-                         disabled={currentPage >= totalPages}
-                         onClick={() => activeApiViewModel.setPageIndex(activeApiViewModel.pageIndex + 1)}
-                       />
-                     </div>
-                   </nav>
-                 )
-               })()}
+                {apiCollectionPage && (() => {
+                  const totalPages = Math.max(1, activeApiViewModel.totalPages)
+                  const currentPage = activeApiViewModel.pageIndex + 1
+                  return (
+                    <nav className={cssClass("pagination")} aria-label={`Paginação de ${page.toLowerCase()}`}>
+                      <IconButton
+                        variant="subtle"
+                        size="small"
+                        aria-label="Página anterior"
+                        title="Página anterior"
+                        icon={<ChevronLeft className={cssClass("control-icon")} />}
+                        disabled={currentPage <= 1}
+                        onClick={() => activeApiViewModel.setPageIndex(activeApiViewModel.pageIndex - 1)}
+                      />
+                      <div className={cssClass("pagination-pages")}>
+                        {paginationItems(currentPage, totalPages).map((item, index) =>
+                          typeof item === "string" ? (
+                            <span key={`${item}-${index}`} className={cssClass("pagination-ellipsis")} aria-hidden="true">...</span>
+                          ) : (
+                            <button
+                              key={item}
+                              type="button"
+                              className={cssClass(`pagination-number ${item === currentPage ? "pagination-number-active" : ""}`)}
+                              aria-current={item === currentPage ? "page" : undefined}
+                              disabled={item === currentPage}
+                              onClick={() => activeApiViewModel.setPageIndex(item - 1)}
+                            >
+                              {item}
+                            </button>
+                          ),
+                        )}
+                      </div>
+                      <IconButton
+                        variant="subtle"
+                        size="small"
+                        aria-label="Próxima página"
+                        title="Próxima página"
+                        icon={<ChevronRight className={cssClass("control-icon")} />}
+                        disabled={currentPage >= totalPages}
+                        onClick={() => activeApiViewModel.setPageIndex(activeApiViewModel.pageIndex + 1)}
+                      />
+                    </nav>
+                  )
+                })()}
             </Panel>
           )}
         </main>
@@ -1661,6 +1704,18 @@ export function Workspace({ onExit, profile, page }) {
           setError("")
         }}
         size="large"
+        headerContent={
+          showProgressInHeader
+            ? (
+                <FormStepper
+                  display="progress"
+                  steps={editorSteps}
+                  currentIndex={stepIndex}
+                  editing={Boolean(form.id)}
+                />
+              )
+            : null
+        }
         footer={
           <div className={cssClass("editor-footer") }>
             <Button
@@ -1711,15 +1766,6 @@ export function Workspace({ onExit, profile, page }) {
             }`,
           )}
         >
-          {!singlePageEditor && (
-            <FormStepper
-              display="progress"
-              compactProgress={editor === "Clientes" && !form.id}
-              steps={editorSteps}
-              currentIndex={stepIndex}
-              editing={Boolean(form.id)}
-            />
-          )}
           <div className={cssClass("editor-fields wizard-fields")}>
             {(fields[editor] || [])
               .filter(([key]) =>
