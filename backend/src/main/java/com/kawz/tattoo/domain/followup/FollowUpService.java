@@ -1,97 +1,136 @@
 package com.kawz.tattoo.domain.followup;
 
+import com.kawz.tattoo.api.followup.FollowUpMapper;
 import com.kawz.tattoo.api.followup.dto.FollowUpInput;
 import com.kawz.tattoo.api.followup.dto.FollowUpResponse;
-import com.kawz.tattoo.domain.exception.ResourceNotFoundException;
 import com.kawz.tattoo.domain.cliente.Cliente;
-import com.kawz.tattoo.domain.followup.FollowUp;
 import com.kawz.tattoo.domain.cliente.ClienteRepository;
-import com.kawz.tattoo.domain.followup.FollowUpRepository;
+import com.kawz.tattoo.domain.exception.ResourceNotFoundException;
+import com.kawz.tattoo.domain.projeto.ProjetoRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 
-import static com.kawz.tattoo.api.followup.mapper.FollowupApiMapper.toResponse;
-
+/**
+ * Follow-ups dos clientes do tatuador autenticado. O vínculo de propriedade é o
+ * cliente (cliente.tatuador_id), inclusive quando o filtro é por projeto.
+ */
 @Service
 public class FollowUpService {
+
     private final FollowUpRepository followUps;
     private final ClienteRepository clientes;
+    private final ProjetoRepository projetos;
 
-    public FollowUpService(FollowUpRepository followUps, ClienteRepository clientes) {
+    public FollowUpService(FollowUpRepository followUps, ClienteRepository clientes, ProjetoRepository projetos) {
         this.followUps = followUps;
         this.clientes = clientes;
+        this.projetos = projetos;
     }
 
     @Transactional(readOnly = true)
-    public List<FollowUpResponse> listarPorCliente(Integer clienteId) {
-        return followUps.findByClienteIdOrderByDataPrevistaAsc(clienteId).stream()
-                .map(com.kawz.tattoo.api.followup.mapper.FollowupApiMapper::toResponse)
+    public List<FollowUpResponse> listarPorCliente(Integer clienteId, Integer tatuadorId) {
+        obterClienteDoTatuador(clienteId, tatuadorId);
+        // stream().map().toList() substitui a conversão manual de cada FollowUp
+        // pelo mapper e devolve uma lista contendo somente os DTOs.
+        return followUps.findByClienteIdAndCliente_Tatuador_IdOrderByDataPrevistaAsc(clienteId, tatuadorId).stream()
+                .map(FollowUpMapper::toResponse)
                 .toList();
     }
 
     @Transactional(readOnly = true)
     public List<FollowUpResponse> listarPorTatuador(Integer tatuadorId) {
-        return followUps.findByTatuadorId(tatuadorId).stream()
-                .map(com.kawz.tattoo.api.followup.mapper.FollowupApiMapper::toResponse)
+        // stream().map().toList() percorre os FollowUps encontrados, aplica
+        // o mapper explícito e reúne os FollowUpResponse em uma lista.
+        return followUps.findByCliente_Tatuador_Id(tatuadorId).stream()
+                .map(FollowUpMapper::toResponse)
                 .toList();
     }
 
     @Transactional(readOnly = true)
-    public List<FollowUpResponse> listar() {
-        return followUps.findAll().stream().map(com.kawz.tattoo.api.followup.mapper.FollowupApiMapper::toResponse).toList();
+    public List<FollowUpResponse> listar(Integer tatuadorId) {
+        return listarPorTatuador(tatuadorId);
     }
 
     @Transactional(readOnly = true)
-    public List<FollowUpResponse> listarFiltrado(Integer projetoId, String status, java.time.LocalDate dataAte) {
+    public List<FollowUpResponse> listarFiltrado(Integer projetoId, String status, LocalDate dataAte,
+                                                 Integer tatuadorId) {
         List<FollowUp> encontrados;
-        if (projetoId != null) encontrados = followUps.findByProjetoId(projetoId);
-        else if (status != null && !status.isBlank()) encontrados = followUps.findByStatusContatoIgnoreCaseOrderByDataPrevistaAsc(status);
-        else if (dataAte != null) encontrados = followUps.findByDataPrevistaLessThanEqualOrderByDataPrevistaAsc(dataAte);
-        else return listar();
+        if (projetoId != null) {
+            obterProjetoDoTatuador(projetoId, tatuadorId);
+            encontrados = followUps.findByProjetoIdDoTatuador(projetoId, tatuadorId);
+        } else if (status != null && !status.isBlank()) {
+            encontrados = followUps.findByStatusContatoIgnoreCaseAndCliente_Tatuador_IdOrderByDataPrevistaAsc(
+                    status, tatuadorId);
+        } else if (dataAte != null) {
+            encontrados = followUps.findByDataPrevistaLessThanEqualAndCliente_Tatuador_IdOrderByDataPrevistaAsc(
+                    dataAte, tatuadorId);
+        } else {
+            return listar(tatuadorId);
+        }
         if (status != null && !status.isBlank() && projetoId != null) {
             encontrados = encontrados.stream().filter(f -> status.equalsIgnoreCase(f.getStatusContato())).toList();
         }
         if (dataAte != null && projetoId != null) {
-            encontrados = encontrados.stream().filter(f -> f.getDataPrevista() != null && !f.getDataPrevista().isAfter(dataAte)).toList();
+            encontrados = encontrados.stream()
+                    .filter(f -> f.getDataPrevista() != null && !f.getDataPrevista().isAfter(dataAte))
+                    .toList();
         }
-        return encontrados.stream().map(com.kawz.tattoo.api.followup.mapper.FollowupApiMapper::toResponse).toList();
+        // stream().map().toList() resume a conversão item a item da lista filtrada
+        // e produz a lista de respostas que será enviada pela API.
+        return encontrados.stream().map(FollowUpMapper::toResponse).toList();
     }
 
     @Transactional(readOnly = true)
-    public List<FollowUpResponse> listarPorProjeto(Integer projetoId) {
-        return followUps.findByProjetoId(projetoId).stream()
-                .map(com.kawz.tattoo.api.followup.mapper.FollowupApiMapper::toResponse).toList();
+    public List<FollowUpResponse> listarPorProjeto(Integer projetoId, Integer tatuadorId) {
+        obterProjetoDoTatuador(projetoId, tatuadorId);
+        // stream().map().toList() converte cada FollowUp do projeto para DTO
+        // sem modificar a lista original retornada pelo repository.
+        return followUps.findByProjetoIdDoTatuador(projetoId, tatuadorId).stream()
+                .map(FollowUpMapper::toResponse).toList();
     }
 
     @Transactional(readOnly = true)
-    public FollowUpResponse buscar(Integer id) { return toResponse(obter(id)); }
+    public FollowUpResponse buscar(Integer id, Integer tatuadorId) {
+        return FollowUpMapper.toResponse(obterDoTatuador(id, tatuadorId));
+    }
 
     @Transactional
-    public FollowUpResponse criar(FollowUpInput input) {
-        return toResponse(followUps.save(new FollowUp(obterCliente(input.clienteId()), input.tipoContato(),
+    public FollowUpResponse criar(FollowUpInput input, Integer tatuadorId) {
+        return FollowUpMapper.toResponse(followUps.save(new FollowUp(
+                obterClienteDoTatuador(input.clienteId(), tatuadorId), input.tipoContato(),
                 input.statusContato(), input.dataPrevista(), input.dataRealizacao(),
                 input.descricaoObservacao(), input.proximaAcao())));
     }
 
     @Transactional
-    public FollowUpResponse atualizar(Integer id, FollowUpInput input) {
-        FollowUp followUp = obter(id);
-        followUp.vincularCliente(obterCliente(input.clienteId()));
+    public FollowUpResponse atualizar(Integer id, FollowUpInput input, Integer tatuadorId) {
+        FollowUp followUp = obterDoTatuador(id, tatuadorId);
+        followUp.vincularCliente(obterClienteDoTatuador(input.clienteId(), tatuadorId));
         followUp.atualizar(input.tipoContato(), input.statusContato(), input.dataPrevista(),
                 input.dataRealizacao(), input.descricaoObservacao(), input.proximaAcao());
-        return toResponse(followUp);
+        return FollowUpMapper.toResponse(followUp);
     }
 
     @Transactional
-    public void excluir(Integer id) { followUps.delete(obter(id)); }
-
-    private Cliente obterCliente(Integer id) {
-        return clientes.findById(id).orElseThrow(() -> new ResourceNotFoundException("Cliente", id));
+    public void excluir(Integer id, Integer tatuadorId) {
+        followUps.delete(obterDoTatuador(id, tatuadorId));
     }
 
-    private FollowUp obter(Integer id) {
-        return followUps.findById(id).orElseThrow(() -> new ResourceNotFoundException("FollowUp", id));
+    private Cliente obterClienteDoTatuador(Integer id, Integer tatuadorId) {
+        return clientes.findByIdAndTatuadorId(id, tatuadorId)
+                .orElseThrow(() -> new ResourceNotFoundException("Cliente", id));
+    }
+
+    private void obterProjetoDoTatuador(Integer projetoId, Integer tatuadorId) {
+        projetos.findByIdAndTatuadorId(projetoId, tatuadorId)
+                .orElseThrow(() -> new ResourceNotFoundException("Projeto", projetoId));
+    }
+
+    private FollowUp obterDoTatuador(Integer id, Integer tatuadorId) {
+        return followUps.findByIdAndCliente_Tatuador_Id(id, tatuadorId)
+                .orElseThrow(() -> new ResourceNotFoundException("FollowUp", id));
     }
 }

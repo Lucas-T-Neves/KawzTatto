@@ -1,6 +1,5 @@
 package com.kawz.tattoo.domain.movimentacao;
 
-import com.kawz.tattoo.domain.movimentacao.MovimentacaoFinanceira;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -10,28 +9,38 @@ import org.springframework.data.repository.query.Param;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 public interface MovimentacaoFinanceiraRepository extends JpaRepository<MovimentacaoFinanceira, Integer> {
-    Page<MovimentacaoFinanceira> findByProjetoIdOrderByDataOcorrenciaDesc(Integer projetoId, Pageable pageable);
+
+    Page<MovimentacaoFinanceira> findByProjetoIdAndProjeto_Tatuador_IdOrderByDataOcorrenciaDesc(
+            Integer projetoId, Integer tatuadorId, Pageable pageable);
+
+    List<MovimentacaoFinanceira> findByProjetoIdAndProjeto_Tatuador_IdOrderByDataOcorrenciaDescIdDesc(
+            Integer projetoId, Integer tatuadorId);
+
+    Optional<MovimentacaoFinanceira> findByIdAndProjeto_Tatuador_Id(Integer id, Integer tatuadorId);
 
     @Query("""
             SELECT m FROM MovimentacaoFinanceira m
-            WHERE (:inicio IS NULL OR m.dataOcorrencia >= :inicio)
+            WHERE m.projeto.tatuador.id = :tatuadorId
+              AND (:inicio IS NULL OR m.dataOcorrencia >= :inicio)
               AND (:fim IS NULL OR m.dataOcorrencia < :fim)
               AND (:status IS NULL OR LOWER(m.statusPagamento) = LOWER(:status))
               AND (:projetoId IS NULL OR m.projeto.id = :projetoId)
               AND (:clienteId IS NULL OR m.projeto.cliente.id = :clienteId)
             ORDER BY m.dataOcorrencia DESC, m.id DESC
             """)
-    Page<MovimentacaoFinanceira> buscar(@Param("inicio") LocalDate inicio,
+    Page<MovimentacaoFinanceira> buscar(@Param("tatuadorId") Integer tatuadorId,
+                                        @Param("inicio") LocalDate inicio,
                                         @Param("fim") LocalDate fim,
                                         @Param("status") String status,
                                         @Param("projetoId") Integer projetoId,
                                         @Param("clienteId") Integer clienteId,
                                         Pageable pageable);
 
-    List<MovimentacaoFinanceira> findByDataOcorrenciaGreaterThanEqualAndDataOcorrenciaLessThan(
-            LocalDate inicio, LocalDate fim);
+    List<MovimentacaoFinanceira> findByProjeto_Tatuador_IdAndDataOcorrenciaGreaterThanEqualAndDataOcorrenciaLessThan(
+            Integer tatuadorId, LocalDate inicio, LocalDate fim);
 
     /** Soma das entradas pagas: base do saldo a receber (total - recebido). */
     @Query("""
@@ -47,7 +56,7 @@ public interface MovimentacaoFinanceiraRepository extends JpaRepository<Moviment
     boolean existsByProjetoIdAndCategoriaIgnoreCaseAndStatusPagamentoIgnoreCase(
             Integer projetoId, String categoria, String statusPagamento);
 
-    /** Resumo por projeto: [projetoId, recebido, sinalPago(0/1)] para as listagens. */
+    /** Resumo por projeto do tatuador: [projetoId, recebido, sinalPago(0/1)] para as listagens. */
     @Query("""
             SELECT m.projeto.id,
                    COALESCE(SUM(CASE WHEN UPPER(m.naturezaTransacao) = 'ENTRADA' AND LOWER(m.statusPagamento) = 'pago'
@@ -55,7 +64,8 @@ public interface MovimentacaoFinanceiraRepository extends JpaRepository<Moviment
                    MAX(CASE WHEN LOWER(m.categoria) = 'sinal' AND LOWER(m.statusPagamento) = 'pago'
                             THEN 1 ELSE 0 END)
             FROM MovimentacaoFinanceira m
+            WHERE m.projeto.tatuador.id = :tatuadorId
             GROUP BY m.projeto.id
             """)
-    List<Object[]> resumirPorProjeto();
+    List<Object[]> resumirPorProjeto(@Param("tatuadorId") Integer tatuadorId);
 }

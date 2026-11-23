@@ -28,7 +28,8 @@ SELECT
   c.data_assinatura,
   c.status_contrato,
   c.pdf_url,
-  c.transaction_ref
+  c.transaction_ref,
+  p.tatuador_id                AS tatuador_id
 FROM contrato c
 JOIN projeto p  ON p.contrato_id = c.id
 JOIN tatuador t ON t.id = p.tatuador_id

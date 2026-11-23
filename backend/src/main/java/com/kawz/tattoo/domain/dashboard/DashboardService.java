@@ -1,12 +1,10 @@
 package com.kawz.tattoo.domain.dashboard;
 
-import com.kawz.tattoo.domain.movimentacao.MovimentacaoService;
-
-
 import com.kawz.tattoo.api.dashboard.dto.DashboardResponse;
 import com.kawz.tattoo.api.movimentacao.dto.MovimentacaoResumoResponse;
 import com.kawz.tattoo.domain.followup.FollowUp;
 import com.kawz.tattoo.domain.followup.FollowUpRepository;
+import com.kawz.tattoo.domain.movimentacao.MovimentacaoService;
 import com.kawz.tattoo.domain.projeto.ProjetoRepository;
 import com.kawz.tattoo.domain.sessao.SessaoRepository;
 import org.springframework.stereotype.Service;
@@ -15,8 +13,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.YearMonth;
 
+/** Indicadores do tatuador autenticado (nunca do estúdio inteiro). */
 @Service
 public class DashboardService {
+
     private final ProjetoRepository projetos;
     private final SessaoRepository sessoes;
     private final FollowUpRepository followUps;
@@ -31,22 +31,29 @@ public class DashboardService {
     }
 
     @Transactional(readOnly = true)
-    public DashboardResponse resumir(YearMonth mes) {
+    public DashboardResponse resumir(YearMonth mes, Integer tatuadorId) {
         LocalDate hoje = LocalDate.now();
-        long projetosAtivos = projetos.findAll().stream()
+        // stream().filter().count() simplifica a seleção dos projetos ativos
+        // e a contagem dos elementos que atendem à regra.
+        long projetosAtivos = projetos.findByTatuadorIdOrderByIdDesc(tatuadorId).stream()
                 .filter(p -> p.getStatusProjeto() == null
                         || (!p.getStatusProjeto().equalsIgnoreCase("CANCELADO")
                         && !p.getStatusProjeto().equalsIgnoreCase("FINALIZADO")
                         && !p.getStatusProjeto().equalsIgnoreCase("CONCLUIDO")))
                 .count();
-        long sessoesHoje = sessoes.findAll().stream()
-                .filter(s -> s.getDataHorario() != null && s.getDataHorario().toLocalDate().equals(hoje))
+        long sessoesHoje = sessoes.findByDataHorarioAfterAndProjeto_Tatuador_IdOrderByDataHorarioAsc(
+                        hoje.atStartOfDay(), tatuadorId,
+                        org.springframework.data.domain.PageRequest.of(0, 500))
+                .stream()
+                .filter(s -> s.getDataHorario().toLocalDate().equals(hoje))
                 .filter(s -> s.getStatusSessao() == null || !s.getStatusSessao().equalsIgnoreCase("CANCELADA"))
                 .count();
-        long followUpsPendentes = followUps.findAll().stream()
+        // stream().filter().count() filtra os follow-ups pendentes e conta
+        // somente os registros que satisfazem a condição.
+        long followUpsPendentes = followUps.findByCliente_Tatuador_Id(tatuadorId).stream()
                 .filter(this::pendente)
                 .count();
-        MovimentacaoResumoResponse financeiro = movimentacoes.resumo(mes.toString());
+        MovimentacaoResumoResponse financeiro = movimentacoes.resumo(mes.toString(), tatuadorId);
         return new DashboardResponse(mes.toString(), projetosAtivos, sessoesHoje, followUpsPendentes,
                 financeiro.receita(), financeiro.despesas(), financeiro.saldo(), financeiro.pendencias());
     }

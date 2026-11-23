@@ -6,7 +6,8 @@ import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
-public record AtividadeInput(@NotNull Integer tatuadorId,
+public record AtividadeInput(/* tatuadorId enviado pelo frontend: aceito e ignorado (o dono vem do token) */
+                              Integer tatuadorId,
                                  Integer projetoId,
                                  Integer clienteId,
                                  @NotBlank @Size(max = 45) String descricao,
@@ -18,8 +19,5 @@ public record AtividadeInput(@NotNull Integer tatuadorId,
                                   LocalTime termino,
                                   @Size(max = 255) String local,
                                   @Size(max = 2000) String observacoes) {
-        public AtividadeInput(Integer tatuadorId, String descricao, String tipo) {
-            this(tatuadorId, null, null, descricao, tipo, null, descricao,
-                    null, null, null, null, null);
-        }
+
     }

@@ -1,16 +1,13 @@
 package com.kawz.tattoo.domain.tatuador;
 
+import com.kawz.tattoo.api.tatuador.TatuadorMapper;
 import com.kawz.tattoo.api.tatuador.dto.LoginRequest;
 import com.kawz.tattoo.api.tatuador.dto.LoginResponse;
 import com.kawz.tattoo.api.tatuador.dto.TatuadorCreate;
 import com.kawz.tattoo.api.tatuador.dto.TatuadorResponse;
 import com.kawz.tattoo.api.tatuador.dto.TatuadorUpdate;
-
-
 import com.kawz.tattoo.domain.exception.BusinessException;
 import com.kawz.tattoo.domain.exception.ResourceNotFoundException;
-import com.kawz.tattoo.domain.tatuador.Tatuador;
-import com.kawz.tattoo.domain.tatuador.TatuadorRepository;
 import com.kawz.tattoo.domain.security.JwtService;
 import com.kawz.tattoo.domain.security.SenhaEncoder;
 import org.springframework.data.domain.Page;
@@ -20,10 +17,16 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Locale;
 
-import static com.kawz.tattoo.api.tatuador.mapper.TatuadorApiMapper.toResponse;
-
+/**
+ * Cadastro, autenticação e perfil do tatuador.
+ *
+ * <p>Leitura por id, atualização e exclusão são restritas ao próprio tatuador
+ * autenticado: outro id responde 404. A listagem permanece como diretório do
+ * estúdio (nome e e-mail dos artistas), sem expor senha.</p>
+ */
 @Service
 public class TatuadorService {
+
     private final TatuadorRepository repository;
     private final SenhaEncoder senhaEncoder;
     private final JwtService jwtService;
@@ -36,16 +39,20 @@ public class TatuadorService {
 
     @Transactional(readOnly = true)
     public Page<TatuadorResponse> listar(Pageable pageable) {
-        return repository.findAll(pageable).map(com.kawz.tattoo.api.tatuador.mapper.TatuadorApiMapper::toResponse);
+        // Page.map transforma cada Tatuador em TatuadorResponse e conserva
+        // os dados de paginação produzidos pelo repository.
+        return repository.findAll(pageable).map(TatuadorMapper::toResponse);
     }
 
     @Transactional(readOnly = true)
-    public TatuadorResponse buscar(Integer id) { return toResponse(obter(id)); }
+    public TatuadorResponse buscar(Integer id, Integer tatuadorId) {
+        return TatuadorMapper.toResponse(obterProprio(id, tatuadorId));
+    }
 
     @Transactional(readOnly = true)
     public TatuadorResponse buscarPorEmail(String email) {
         return repository.findByEmailIgnoreCase(email)
-                .map(com.kawz.tattoo.api.tatuador.mapper.TatuadorApiMapper::toResponse)
+                .map(TatuadorMapper::toResponse)
                 .orElseThrow(() -> new ResourceNotFoundException("Tatuador", email));
     }
 
@@ -53,13 +60,13 @@ public class TatuadorService {
     public TatuadorResponse criar(TatuadorCreate input) {
         String email = normalizarEmail(input.email());
         if (repository.existsByEmailIgnoreCase(email)) throw new BusinessException("E-mail já cadastrado");
-        return toResponse(repository.save(new Tatuador(
+        return TatuadorMapper.toResponse(repository.save(new Tatuador(
                 input.nome().trim(), email, senhaEncoder.codificar(input.senha()))));
     }
 
     @Transactional
-    public TatuadorResponse atualizar(Integer id, TatuadorUpdate input) {
-        Tatuador tatuador = obter(id);
+    public TatuadorResponse atualizar(Integer id, TatuadorUpdate input, Integer tatuadorId) {
+        Tatuador tatuador = obterProprio(id, tatuadorId);
         String email = normalizarEmail(input.email());
         if (repository.existsByEmailIgnoreCaseAndIdNot(email, id)) {
             throw new BusinessException("E-mail já cadastrado");
@@ -68,11 +75,13 @@ public class TatuadorService {
         if (input.senha() != null && !input.senha().isBlank()) {
             tatuador.alterarSenha(senhaEncoder.codificar(input.senha()));
         }
-        return toResponse(tatuador);
+        return TatuadorMapper.toResponse(tatuador);
     }
 
     @Transactional
-    public void excluir(Integer id) { repository.delete(obter(id)); }
+    public void excluir(Integer id, Integer tatuadorId) {
+        repository.delete(obterProprio(id, tatuadorId));
+    }
 
     /** Emite o JWT quando a senha confere; sem senha correta, autenticado=false e sem token. */
     @Transactional(readOnly = true)
@@ -87,7 +96,10 @@ public class TatuadorService {
                 .orElseGet(() -> new LoginResponse(false, null, null, null, null));
     }
 
-    private Tatuador obter(Integer id) {
+    private Tatuador obterProprio(Integer id, Integer tatuadorId) {
+        if (!id.equals(tatuadorId)) {
+            throw new ResourceNotFoundException("Tatuador", id);
+        }
         return repository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Tatuador", id));
     }
 

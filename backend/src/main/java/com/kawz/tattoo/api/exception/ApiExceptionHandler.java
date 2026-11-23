@@ -2,6 +2,7 @@ package com.kawz.tattoo.api.exception;
 
 import com.kawz.tattoo.domain.exception.BusinessException;
 import com.kawz.tattoo.domain.exception.IntegracaoException;
+import com.kawz.tattoo.domain.exception.NaoAutenticadoException;
 import com.kawz.tattoo.domain.exception.ResourceNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -34,6 +35,12 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ProblemDetail> naoEncontrado(ResourceNotFoundException ex, HttpServletRequest request) {
         return responder(HttpStatus.NOT_FOUND, "Recurso não encontrado", "nao-encontrado",
+                ex.getMessage(), request.getRequestURI(), null);
+    }
+
+    @ExceptionHandler(NaoAutenticadoException.class)
+    public ResponseEntity<ProblemDetail> naoAutenticado(NaoAutenticadoException ex, HttpServletRequest request) {
+        return responder(HttpStatus.UNAUTHORIZED, "Não autenticado", "nao-autenticado",
                 ex.getMessage(), request.getRequestURI(), null);
     }
 

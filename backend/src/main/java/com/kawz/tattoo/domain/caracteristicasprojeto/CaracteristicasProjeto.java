@@ -6,7 +6,7 @@ import com.kawz.tattoo.domain.shared.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
-
+// e o id do projeto?
 @Entity
 @Table(name = "caracteristicas_projeto")
 public class CaracteristicasProjeto extends BaseEntity {
@@ -26,6 +26,16 @@ public class CaracteristicasProjeto extends BaseEntity {
     private String complexidade;
 
     public CaracteristicasProjeto() {}
+
+    public CaracteristicasProjeto(String ideiaExpectativa, String estiloArte, String localizacaoCorpo, String tamanho, String dificuldade, String cores, String complexidade) {
+        this.ideiaExpectativa = ideiaExpectativa;
+        this.estiloArte = estiloArte;
+        this.localizacaoCorpo = localizacaoCorpo;
+        this.tamanho = tamanho;
+        this.dificuldade = dificuldade;
+        this.cores = cores;
+        this.complexidade = complexidade;
+    }
 
     public void atualizarCaracteristicas(String ideiaExpectativa, String estiloArte, String localizacaoCorpo,
                                          String tamanho, String dificuldade, String cores, String complexidade) {

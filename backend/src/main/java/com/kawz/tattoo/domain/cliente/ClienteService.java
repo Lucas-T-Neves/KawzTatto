@@ -1,67 +1,90 @@
 package com.kawz.tattoo.domain.cliente;
 
+import com.kawz.tattoo.api.cliente.ClienteMapper;
 import com.kawz.tattoo.api.cliente.dto.ClienteInput;
 import com.kawz.tattoo.api.cliente.dto.ClienteResponse;
 import com.kawz.tattoo.api.cliente.dto.ConversaResponse;
 import com.kawz.tattoo.domain.exception.ResourceNotFoundException;
-import com.kawz.tattoo.domain.cliente.Cliente;
 import com.kawz.tattoo.domain.preferenciascliente.PreferenciasCliente;
-import com.kawz.tattoo.domain.cliente.ClienteRepository;
+import com.kawz.tattoo.domain.tatuador.Tatuador;
+import com.kawz.tattoo.domain.tatuador.TatuadorRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import static com.kawz.tattoo.api.cliente.mapper.ClienteApiMapper.toResponse;
-
+/**
+ * Clientes do tatuador autenticado. Toda operação recebe o id do dono (vindo do
+ * token) e consulta apenas registros desse tatuador: um id de outro tatuador
+ * resulta em 404, sem revelar que o registro existe.
+ */
 @Service
 public class ClienteService {
-    private final ClienteRepository repository;
 
-    public ClienteService(ClienteRepository repository) { this.repository = repository; }
+    private final ClienteRepository clientes;
+    private final TatuadorRepository tatuadores;
 
-    @Transactional(readOnly = true)
-    public Page<ClienteResponse> listar(Pageable pageable) {
-        return repository.findAll(pageable).map(com.kawz.tattoo.api.cliente.mapper.ClienteApiMapper::toResponse);
+    public ClienteService(ClienteRepository clientes, TatuadorRepository tatuadores) {
+        this.clientes = clientes;
+        this.tatuadores = tatuadores;
     }
 
     @Transactional(readOnly = true)
-    public ClienteResponse buscar(Integer id) { return toResponse(obter(id)); }
+    public Page<ClienteResponse> listar(Integer tatuadorId, Pageable pageable) {
+        // Page.map simplifica percorrer o conteúdo da página, converter cada Cliente
+        // pelo mapper e reconstruir a mesma página preservando total, tamanho e índice.
+        return clientes.findByTatuadorId(tatuadorId, pageable).map(ClienteMapper::toResponse);
+    }
 
     @Transactional(readOnly = true)
-    public ConversaResponse conversa(Integer id) {
-        Cliente cliente = obter(id);
+    public ClienteResponse buscar(Integer id, Integer tatuadorId) {
+        return ClienteMapper.toResponse(obterDoTatuador(id, tatuadorId));
+    }
+
+    @Transactional(readOnly = true)
+    public ConversaResponse conversa(Integer id, Integer tatuadorId) {
+        Cliente cliente = obterDoTatuador(id, tatuadorId);
         String url = cliente.getLinkConversa();
         return new ConversaResponse(id, url,
                 url == null || url.isBlank() ? "NAO_CONFIGURADA" : "LINK_EXISTENTE");
     }
 
     @Transactional
-    public ClienteResponse criar(ClienteInput input) {
-        Cliente cliente = new Cliente(input.nome().trim(), input.telefone(),
+    public ClienteResponse criar(ClienteInput input, Integer tatuadorId) {
+        Cliente cliente = new Cliente(obterTatuador(tatuadorId), input.nome().trim(), input.telefone(),
                 input.cpf(), input.instagram(), input.canalAquisicao(), input.linkConversa(), input.linkPasta(),
                 input.localizacao(), input.tamanho(), input.ideia(),
                 statusNovoCliente(input.status()));
         atualizarPreferencias(cliente.getPreferencias(), input);
-        return toResponse(repository.save(cliente));
+        return ClienteMapper.toResponse(clientes.save(cliente));
     }
 
     @Transactional
-    public ClienteResponse atualizar(Integer id, ClienteInput input) {
-        Cliente cliente = obter(id);
+    public ClienteResponse atualizar(Integer id, ClienteInput input, Integer tatuadorId) {
+        Cliente cliente = obterDoTatuador(id, tatuadorId);
         cliente.atualizarCadastro(input.nome().trim(), input.telefone(), input.cpf(), input.instagram(),
                 input.canalAquisicao(), input.linkConversa(), input.linkPasta(),
                 input.localizacao(), input.tamanho(), input.ideia(),
                 statusAtualizado(input.status(), cliente.getStatus()));
         atualizarPreferencias(cliente.getPreferencias(), input);
-        return toResponse(cliente);
+        return ClienteMapper.toResponse(cliente);
     }
 
     @Transactional
-    public void excluir(Integer id) { repository.delete(obter(id)); }
+    public void excluir(Integer id, Integer tatuadorId) {
+        clientes.delete(obterDoTatuador(id, tatuadorId));
+    }
 
-    private Cliente obter(Integer id) {
-        return repository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Cliente", id));
+    /** Carrega o cliente garantindo que pertence ao tatuador autenticado. */
+    @Transactional(readOnly = true)
+    public Cliente obterDoTatuador(Integer id, Integer tatuadorId) {
+        return clientes.findByIdAndTatuadorId(id, tatuadorId)
+                .orElseThrow(() -> new ResourceNotFoundException("Cliente", id));
+    }
+
+    private Tatuador obterTatuador(Integer tatuadorId) {
+        return tatuadores.findById(tatuadorId)
+                .orElseThrow(() -> new ResourceNotFoundException("Tatuador", tatuadorId));
     }
 
     private void atualizarPreferencias(PreferenciasCliente preferencias, ClienteInput input) {

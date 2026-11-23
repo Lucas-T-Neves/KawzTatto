@@ -1,21 +1,22 @@
 package com.kawz.tattoo.domain.anamnese;
 
+import com.kawz.tattoo.api.anamnese.AnamneseMapper;
 import com.kawz.tattoo.api.anamnese.dto.AnamneseInput;
 import com.kawz.tattoo.api.anamnese.dto.AnamneseResponse;
-import com.kawz.tattoo.domain.exception.ResourceNotFoundException;
-import com.kawz.tattoo.domain.anamnese.Anamnese;
 import com.kawz.tattoo.domain.cliente.Cliente;
-import com.kawz.tattoo.domain.anamnese.AnamneseRepository;
 import com.kawz.tattoo.domain.cliente.ClienteRepository;
+import com.kawz.tattoo.domain.exception.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-import static com.kawz.tattoo.api.anamnese.mapper.AnamneseApiMapper.toResponse;
-
+/**
+ * Anamneses dos clientes do tatuador autenticado. O proprietário é o cliente.
+ */
 @Service
 public class AnamneseService {
+
     private final AnamneseRepository anamneses;
     private final ClienteRepository clientes;
 
@@ -25,38 +26,49 @@ public class AnamneseService {
     }
 
     @Transactional(readOnly = true)
-    public List<AnamneseResponse> listarPorCliente(Integer clienteId) {
-        return anamneses.findByClienteIdOrderByIdDesc(clienteId).stream()
-                .map(com.kawz.tattoo.api.anamnese.mapper.AnamneseApiMapper::toResponse).toList();
+    public List<AnamneseResponse> listarPorCliente(Integer clienteId, Integer tatuadorId) {
+        obterClienteDoTatuador(clienteId, tatuadorId);
+        // stream().map().toList() simplifica a conversão de cada Anamnese
+        // para AnamneseResponse e a reunião dos DTOs em uma lista.
+        return anamneses.findByClienteIdAndCliente_Tatuador_IdOrderByIdDesc(clienteId, tatuadorId).stream()
+                .map(AnamneseMapper::toResponse)
+                .toList();
     }
 
     @Transactional(readOnly = true)
-    public AnamneseResponse buscar(Integer id) { return toResponse(obter(id)); }
-
-    @Transactional
-    public AnamneseResponse criar(AnamneseInput input) {
-        Cliente cliente = obterCliente(input.clienteId());
-        return toResponse(anamneses.save(new Anamnese(cliente, input.dadosSaude(), input.preparacaoTatuagem())));
+    public AnamneseResponse buscar(Integer id, Integer tatuadorId) {
+        return AnamneseMapper.toResponse(obterDoTatuador(id, tatuadorId));
     }
 
     @Transactional
-    public AnamneseResponse atualizar(Integer id, AnamneseInput input) {
-        Anamnese anamnese = obter(id);
+    public AnamneseResponse criar(AnamneseInput input, Integer tatuadorId) {
+        Cliente cliente = obterClienteDoTatuador(input.clienteId(), tatuadorId);
+        return AnamneseMapper.toResponse(anamneses.save(
+                new Anamnese(cliente, input.dadosSaude(), input.preparacaoTatuagem())));
+    }
+
+    @Transactional
+    public AnamneseResponse atualizar(Integer id, AnamneseInput input, Integer tatuadorId) {
+        Anamnese anamnese = obterDoTatuador(id, tatuadorId);
         if (!anamnese.getCliente().getId().equals(input.clienteId())) {
             throw new ResourceNotFoundException("Anamnese", id);
         }
         anamnese.atualizarInformacoes(input.dadosSaude(), input.preparacaoTatuagem());
-        return toResponse(anamnese);
+        return AnamneseMapper.toResponse(anamnese);
     }
 
     @Transactional
-    public void excluir(Integer id) { anamneses.delete(obter(id)); }
-
-    private Cliente obterCliente(Integer id) {
-        return clientes.findById(id).orElseThrow(() -> new ResourceNotFoundException("Cliente", id));
+    public void excluir(Integer id, Integer tatuadorId) {
+        anamneses.delete(obterDoTatuador(id, tatuadorId));
     }
 
-    private Anamnese obter(Integer id) {
-        return anamneses.findById(id).orElseThrow(() -> new ResourceNotFoundException("Anamnese", id));
+    private Cliente obterClienteDoTatuador(Integer id, Integer tatuadorId) {
+        return clientes.findByIdAndTatuadorId(id, tatuadorId)
+                .orElseThrow(() -> new ResourceNotFoundException("Cliente", id));
+    }
+
+    private Anamnese obterDoTatuador(Integer id, Integer tatuadorId) {
+        return anamneses.findByIdAndCliente_Tatuador_Id(id, tatuadorId)
+                .orElseThrow(() -> new ResourceNotFoundException("Anamnese", id));
     }
 }

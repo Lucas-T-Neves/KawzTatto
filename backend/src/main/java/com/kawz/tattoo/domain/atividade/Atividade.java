@@ -16,7 +16,7 @@ public class Atividade extends BaseEntity {
     private Tatuador tatuador;
     @Column(name = "projeto_id") private Integer projetoId;
     @Column(name = "cliente_id") private Integer clienteId;
-    @Column(length = 45) private String descricao;
+    @Column(length = 255) private String descricao;
     @Column(length = 45) private String tipo;
     @Column(length = 45) private String status;
     @Column(length = 120) private String titulo;

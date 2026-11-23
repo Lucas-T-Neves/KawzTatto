@@ -1,14 +1,13 @@
 package com.kawz.tattoo.domain.orcamento;
 
+import com.kawz.tattoo.api.orcamento.OrcamentoMapper;
 import com.kawz.tattoo.api.orcamento.dto.OrcamentoInput;
 import com.kawz.tattoo.api.orcamento.dto.OrcamentoResponse;
+import com.kawz.tattoo.domain.cliente.Cliente;
+import com.kawz.tattoo.domain.cliente.ClienteRepository;
 import com.kawz.tattoo.domain.exception.BusinessException;
 import com.kawz.tattoo.domain.exception.ResourceNotFoundException;
-import com.kawz.tattoo.domain.cliente.Cliente;
-import com.kawz.tattoo.domain.orcamento.Orcamento;
 import com.kawz.tattoo.domain.projeto.Projeto;
-import com.kawz.tattoo.domain.cliente.ClienteRepository;
-import com.kawz.tattoo.domain.orcamento.OrcamentoRepository;
 import com.kawz.tattoo.domain.projeto.ProjetoRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -17,10 +16,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-import static com.kawz.tattoo.api.orcamento.mapper.OrcamentoApiMapper.toResponse;
-
+/**
+ * Orçamentos do tatuador autenticado. O proprietário é o dono do projeto; o
+ * cliente informado também precisa pertencer ao mesmo tatuador.
+ */
 @Service
 public class OrcamentoService {
+
     private final OrcamentoRepository orcamentos;
     private final ProjetoRepository projetos;
     private final ClienteRepository clientes;
@@ -32,51 +34,53 @@ public class OrcamentoService {
     }
 
     @Transactional(readOnly = true)
-    public Page<OrcamentoResponse> listar(String status, Integer projetoId, Integer clienteId, Pageable pageable) {
-        return orcamentos.buscar(normalizar(status), projetoId, clienteId, pageable)
-                .map(com.kawz.tattoo.api.orcamento.mapper.OrcamentoApiMapper::toResponse);
+    public Page<OrcamentoResponse> listar(Integer tatuadorId, String status, Integer projetoId,
+                                          Integer clienteId, Pageable pageable) {
+        return orcamentos.buscar(tatuadorId, normalizar(status), projetoId, clienteId, pageable)
+                .map(OrcamentoMapper::toResponse);
     }
 
     @Transactional(readOnly = true)
-    public OrcamentoResponse buscar(Integer id) {
-        return toResponse(obter(id));
+    public OrcamentoResponse buscar(Integer id, Integer tatuadorId) {
+        return OrcamentoMapper.toResponse(obterDoTatuador(id, tatuadorId));
     }
 
     @Transactional(readOnly = true)
-    public List<OrcamentoResponse> listarPorProjeto(Integer projetoId) {
-        return orcamentos.findByProjetoIdOrderByDataOrcamentoDescIdDesc(projetoId)
-                .stream().map(com.kawz.tattoo.api.orcamento.mapper.OrcamentoApiMapper::toResponse).toList();
+    public List<OrcamentoResponse> listarPorProjeto(Integer projetoId, Integer tatuadorId) {
+        obterProjetoDoTatuador(projetoId, tatuadorId);
+        return orcamentos.findByProjetoIdAndProjeto_Tatuador_IdOrderByDataOrcamentoDescIdDesc(projetoId, tatuadorId)
+                .stream().map(OrcamentoMapper::toResponse).toList();
     }
 
     @Transactional
-    public OrcamentoResponse criar(OrcamentoInput input) {
+    public OrcamentoResponse criar(OrcamentoInput input, Integer tatuadorId) {
         validar(input);
-        Projeto projeto = obterProjeto(input.projetoId());
-        Cliente cliente = obterCliente(input.clienteId());
+        Projeto projeto = obterProjetoDoTatuador(input.projetoId(), tatuadorId);
+        Cliente cliente = obterClienteDoTatuador(input.clienteId(), tatuadorId);
         validarVinculo(projeto, cliente);
         Orcamento orcamento = new Orcamento(projeto, cliente, nome(input), input.data(), input.status(),
                 input.total(), input.deposito(), input.sessoesEstimadas(), input.formaPagamento(),
                 input.validade(), input.propostaAceita());
-        return toResponse(orcamentos.save(orcamento));
+        return OrcamentoMapper.toResponse(orcamentos.save(orcamento));
     }
 
     @Transactional
-    public OrcamentoResponse atualizar(Integer id, OrcamentoInput input) {
+    public OrcamentoResponse atualizar(Integer id, OrcamentoInput input, Integer tatuadorId) {
         validar(input);
-        Orcamento orcamento = obter(id);
-        Projeto projeto = obterProjeto(input.projetoId());
-        Cliente cliente = obterCliente(input.clienteId());
+        Orcamento orcamento = obterDoTatuador(id, tatuadorId);
+        Projeto projeto = obterProjetoDoTatuador(input.projetoId(), tatuadorId);
+        Cliente cliente = obterClienteDoTatuador(input.clienteId(), tatuadorId);
         validarVinculo(projeto, cliente);
         orcamento.vincularProjeto(projeto);
         orcamento.vincularCliente(cliente);
         orcamento.atualizar(nome(input), input.data(), input.status(), input.total(), input.deposito(),
                 input.sessoesEstimadas(), input.formaPagamento(), input.validade(), input.propostaAceita());
-        return toResponse(orcamento);
+        return OrcamentoMapper.toResponse(orcamento);
     }
 
     @Transactional
-    public void excluir(Integer id) {
-        orcamentos.delete(obter(id));
+    public void excluir(Integer id, Integer tatuadorId) {
+        orcamentos.delete(obterDoTatuador(id, tatuadorId));
     }
 
     private void validar(OrcamentoInput input) {
@@ -98,16 +102,19 @@ public class OrcamentoService {
         return input.nome().trim();
     }
 
-    private Orcamento obter(Integer id) {
-        return orcamentos.findById(id).orElseThrow(() -> new ResourceNotFoundException("Orcamento", id));
+    private Orcamento obterDoTatuador(Integer id, Integer tatuadorId) {
+        return orcamentos.findByIdAndProjeto_Tatuador_Id(id, tatuadorId)
+                .orElseThrow(() -> new ResourceNotFoundException("Orcamento", id));
     }
 
-    private Projeto obterProjeto(Integer id) {
-        return projetos.findById(id).orElseThrow(() -> new ResourceNotFoundException("Projeto", id));
+    private Projeto obterProjetoDoTatuador(Integer id, Integer tatuadorId) {
+        return projetos.findByIdAndTatuadorId(id, tatuadorId)
+                .orElseThrow(() -> new ResourceNotFoundException("Projeto", id));
     }
 
-    private Cliente obterCliente(Integer id) {
-        return clientes.findById(id).orElseThrow(() -> new ResourceNotFoundException("Cliente", id));
+    private Cliente obterClienteDoTatuador(Integer id, Integer tatuadorId) {
+        return clientes.findByIdAndTatuadorId(id, tatuadorId)
+                .orElseThrow(() -> new ResourceNotFoundException("Cliente", id));
     }
 
     private String normalizar(String valor) {

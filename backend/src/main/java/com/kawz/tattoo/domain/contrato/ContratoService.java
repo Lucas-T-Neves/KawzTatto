@@ -1,18 +1,14 @@
 package com.kawz.tattoo.domain.contrato;
 
-import com.kawz.tattoo.domain.projeto.Projeto;
-
-
+import com.kawz.tattoo.api.contrato.ContratoMapper;
 import com.kawz.tattoo.api.contrato.dto.AssinaturaInput;
 import com.kawz.tattoo.api.contrato.dto.ContratoCreate;
 import com.kawz.tattoo.api.contrato.dto.ContratoInput;
 import com.kawz.tattoo.api.contrato.dto.ContratoPdfInput;
 import com.kawz.tattoo.api.contrato.dto.ContratoResponse;
 import com.kawz.tattoo.api.contrato.dto.ContratoViewResponse;
-import com.kawz.tattoo.domain.contrato.ContratoViewProjection;
 import com.kawz.tattoo.domain.exception.ResourceNotFoundException;
-import com.kawz.tattoo.domain.contrato.Contrato;
-import com.kawz.tattoo.domain.contrato.ContratoRepository;
+import com.kawz.tattoo.domain.projeto.Projeto;
 import com.kawz.tattoo.domain.projeto.ProjetoRepository;
 import com.kawz.tattoo.infrastructure.integration.ApiTemplateClient;
 import org.springframework.beans.factory.annotation.Value;
@@ -28,10 +24,14 @@ import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 
-import static com.kawz.tattoo.api.contrato.mapper.ContratoApiMapper.toResponse;
-
+/**
+ * Contratos dos projetos do tatuador autenticado. O contrato não guarda o dono:
+ * a posse é sempre derivada do projeto (projeto.contrato_id + projeto.tatuador_id),
+ * inclusive na view vw_contratos.
+ */
 @Service
 public class ContratoService {
+
     private final ContratoRepository contratos;
     private final ProjetoRepository projetos;
     private final ApiTemplateClient apiTemplate;
@@ -50,47 +50,46 @@ public class ContratoService {
 
     /** Leitura paginada pela view vw_contratos (cliente, artista, datas, sinal pago, termos). */
     @Transactional(readOnly = true)
-    public Page<ContratoViewResponse> listar(Pageable pageable) {
-        return contratos.buscarNaView(pageable)
-                .map(com.kawz.tattoo.api.contrato.mapper.ContratoApiMapper::toResponse);
+    public Page<ContratoViewResponse> listar(Integer tatuadorId, Pageable pageable) {
+        // Page.map converte cada projeção da view para ContratoViewResponse
+        // preservando os metadados da página retornada pelo repository.
+        return contratos.buscarNaView(tatuadorId, pageable).map(ContratoMapper::toResponse);
     }
 
     @Transactional(readOnly = true)
-    public ContratoViewResponse buscar(Integer id) {
-        return contratos.buscarNaViewPorId(id)
-                .map(com.kawz.tattoo.api.contrato.mapper.ContratoApiMapper::toResponse)
+    public ContratoViewResponse buscar(Integer id, Integer tatuadorId) {
+        // Optional.map simplifica a conversão do contrato encontrado para DTO
+        // e mantém o Optional vazio para que o tratamento de 404 seja aplicado.
+        return contratos.buscarNaViewPorId(id, tatuadorId)
+                .map(ContratoMapper::toResponse)
                 .orElseThrow(() -> new ResourceNotFoundException("Contrato", id));
     }
 
     @Transactional
-    public ContratoResponse atualizar(Integer id, ContratoInput input) {
-        Contrato contrato = obter(id);
+    public ContratoResponse atualizar(Integer id, ContratoInput input, Integer tatuadorId) {
+        Contrato contrato = obterDoTatuador(id, tatuadorId);
         contrato.atualizar(input.limiteAlteracoesArte(), input.toleranciaAtraso(), input.usoImagem());
-        return toResponse(contrato);
+        return ContratoMapper.toResponse(contrato);
     }
 
     /** Preenche o contrato vazio criado automaticamente junto ao projeto. */
     @Transactional
-    public ContratoResponse criar(ContratoCreate input) {
-        Contrato contrato = projetos.findById(input.projetoId())
-                .orElseThrow(() -> new ResourceNotFoundException("Projeto", input.projetoId()))
-                .getContrato();
+    public ContratoResponse criar(ContratoCreate input, Integer tatuadorId) {
+        Contrato contrato = obterProjetoDoTatuador(input.projetoId(), tatuadorId).getContrato();
         contrato.atualizar(input.limiteAlteracoesArte(), input.toleranciaAtraso(), input.usoImagem());
-        return toResponse(contrato);
+        return ContratoMapper.toResponse(contrato);
     }
 
     @Transactional(readOnly = true)
-    public ContratoResponse buscarPorProjeto(Integer projetoId) {
-        var projeto = projetos.findById(projetoId)
-                .orElseThrow(() -> new ResourceNotFoundException("Projeto", projetoId));
-        return toResponse(projeto.getContrato());
+    public ContratoResponse buscarPorProjeto(Integer projetoId, Integer tatuadorId) {
+        return ContratoMapper.toResponse(obterProjetoDoTatuador(projetoId, tatuadorId).getContrato());
     }
 
     @Transactional
-    public ContratoResponse assinar(Integer id, AssinaturaInput input) {
-        Contrato contrato = obter(id);
+    public ContratoResponse assinar(Integer id, AssinaturaInput input, Integer tatuadorId) {
+        Contrato contrato = obterDoTatuador(id, tatuadorId);
         contrato.registrarAssinatura(input.data() != null ? input.data() : LocalDate.now());
-        return toResponse(contrato);
+        return ContratoMapper.toResponse(contrato);
     }
 
     /**
@@ -99,9 +98,9 @@ public class ContratoService {
      * Se o APITemplate falhar, nada é gravado (502).
      */
     @Transactional
-    public ContratoResponse gerarPdf(Integer id, ContratoPdfInput extra) {
-        Contrato contrato = obter(id);
-        ContratoViewProjection v = contratos.buscarNaViewPorId(id)
+    public ContratoResponse gerarPdf(Integer id, ContratoPdfInput extra, Integer tatuadorId) {
+        Contrato contrato = obterDoTatuador(id, tatuadorId);
+        ContratoViewProjection v = contratos.buscarNaViewPorId(id, tatuadorId)
                 .orElseThrow(() -> new ResourceNotFoundException("Contrato", id));
 
         Map<String, Object> dados = new LinkedHashMap<>();
@@ -119,13 +118,13 @@ public class ContratoService {
         dados.put("data_inicio", data(v.getDataInicio()));
         dados.put("data_fim", data(v.getDataFim()));
         dados.put("valor_orcado", dinheiro(v.getValorOrcado()));
-        dados.put("sinal_pago", Boolean.TRUE.equals(com.kawz.tattoo.api.contrato.mapper.ContratoApiMapper.paraBoolean(v.getSinalPago())) ? "Sim" : "Não");
+        dados.put("sinal_pago", Boolean.TRUE.equals(ContratoMapper.paraBoolean(v.getSinalPago())) ? "Sim" : "Não");
         dados.put("forma_pagamento", texto(v.getFormaPagamento()));
         dados.put("data_geracao", data(LocalDate.now()));
 
         ApiTemplateClient.PdfGerado pdf = apiTemplate.gerarContrato(dados);
         contrato.registrarPdf(pdf.downloadUrl(), pdf.transactionRef());
-        return toResponse(contrato);
+        return ContratoMapper.toResponse(contrato);
     }
 
     private static String texto(String valor) { return valor == null ? "" : valor; }
@@ -138,7 +137,16 @@ public class ContratoService {
         return valor == null ? "" : String.format(Locale.of("pt", "BR"), "R$ %,.2f", valor);
     }
 
-    private Contrato obter(Integer id) {
-        return contratos.findById(id).orElseThrow(() -> new ResourceNotFoundException("Contrato", id));
+    private Contrato obterDoTatuador(Integer id, Integer tatuadorId) {
+        // Optional.map extrai o contrato do projeto somente quando ele existe,
+        // evitando acessar diretamente um valor possivelmente ausente.
+        return projetos.findByContratoIdAndTatuadorId(id, tatuadorId)
+                .map(Projeto::getContrato)
+                .orElseThrow(() -> new ResourceNotFoundException("Contrato", id));
+    }
+
+    private Projeto obterProjetoDoTatuador(Integer id, Integer tatuadorId) {
+        return projetos.findByIdAndTatuadorId(id, tatuadorId)
+                .orElseThrow(() -> new ResourceNotFoundException("Projeto", id));
     }
 }

@@ -1,20 +1,19 @@
 package com.kawz.tattoo.domain.projeto;
 
+import com.kawz.tattoo.api.projeto.ProjetoMapper;
 import com.kawz.tattoo.api.projeto.dto.ProjetoInput;
 import com.kawz.tattoo.api.projeto.dto.ProjetoResponse;
 import com.kawz.tattoo.api.projeto.dto.StatusRequest;
+import com.kawz.tattoo.domain.cliente.Cliente;
+import com.kawz.tattoo.domain.cliente.ClienteRepository;
 import com.kawz.tattoo.domain.exception.BusinessException;
 import com.kawz.tattoo.domain.exception.ResourceNotFoundException;
-import com.kawz.tattoo.domain.cliente.Cliente;
 import com.kawz.tattoo.domain.imagem.Imagem;
-import com.kawz.tattoo.domain.projeto.Projeto;
-import com.kawz.tattoo.domain.tatuador.Tatuador;
-import com.kawz.tattoo.domain.cliente.ClienteRepository;
 import com.kawz.tattoo.domain.imagem.ImagemRepository;
 import com.kawz.tattoo.domain.movimentacao.MovimentacaoFinanceiraRepository;
-import com.kawz.tattoo.domain.projeto.ProjetoRepository;
+import com.kawz.tattoo.domain.tatuador.Tatuador;
 import com.kawz.tattoo.domain.tatuador.TatuadorRepository;
-import com.kawz.tattoo.infrastructure.integration.CloudinaryClient;
+import com.kawz.tattoo.application.gateway.ArmazenamentoImagensGateway;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -25,10 +24,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.kawz.tattoo.api.projeto.mapper.ProjetoApiMapper.toResponse;
-
+/**
+ * Projetos do tatuador autenticado. O proprietário vem sempre do token: o
+ * {@code tatuadorId} enviado no JSON é ignorado (mantido apenas por
+ * compatibilidade com o contrato do frontend).
+ */
 @Service
 public class ProjetoService {
+
     private static final Resumo SEM_MOVIMENTACOES = new Resumo(BigDecimal.ZERO, false);
 
     private final ProjetoRepository projetos;
@@ -36,94 +39,116 @@ public class ProjetoService {
     private final TatuadorRepository tatuadores;
     private final MovimentacaoFinanceiraRepository movimentacoes;
     private final ImagemRepository imagens;
-    private final CloudinaryClient cloudinary;
+    private final ArmazenamentoImagensGateway armazenamento;
 
     public ProjetoService(ProjetoRepository projetos, ClienteRepository clientes, TatuadorRepository tatuadores,
                           MovimentacaoFinanceiraRepository movimentacoes, ImagemRepository imagens,
-                          CloudinaryClient cloudinary) {
+                          ArmazenamentoImagensGateway armazenamento) {
         this.projetos = projetos;
         this.clientes = clientes;
         this.tatuadores = tatuadores;
         this.movimentacoes = movimentacoes;
         this.imagens = imagens;
-        this.cloudinary = cloudinary;
+        this.armazenamento = armazenamento;
     }
 
-    private record Resumo(BigDecimal recebido, boolean sinalPago) {}
+    /** Recebido e sinal pago de um projeto (base do saldo). */
+    public record Resumo(BigDecimal recebido, boolean sinalPago) {}
 
     @Transactional(readOnly = true)
-    public Page<ProjetoResponse> listar(Pageable pageable) {
+    public Page<ProjetoResponse> listar(Integer tatuadorId, Pageable pageable) {
         Map<Integer, Resumo> resumos = new HashMap<>();
-        for (Object[] linha : movimentacoes.resumirPorProjeto()) {
+        for (Object[] linha : movimentacoes.resumirPorProjeto(tatuadorId)) {
             resumos.put((Integer) linha[0], new Resumo((BigDecimal) linha[1],
                     ((Number) linha[2]).intValue() == 1));
         }
-        return projetos.findAll(pageable).map(projeto -> {
+        // Page.map simplifica a conversão de cada Projeto e permite calcular
+        // o resumo antes de gerar o DTO, mantendo os metadados da página.
+        return projetos.findByTatuadorId(tatuadorId, pageable).map(projeto -> {
             Resumo resumo = resumos.getOrDefault(projeto.getId(), SEM_MOVIMENTACOES);
-            return toResponse(projeto, resumo.recebido(), resumo.sinalPago(), referencia(projeto.getId()));
+            return ProjetoMapper.toResponse(projeto, resumo.recebido(), resumo.sinalPago(),
+                    referencia(projeto.getId(), tatuadorId));
         });
     }
 
     @Transactional(readOnly = true)
-    public ProjetoResponse buscar(Integer id) {
+    public ProjetoResponse buscar(Integer id, Integer tatuadorId) {
+        Projeto projeto = obterDoTatuador(id, tatuadorId);
         Resumo resumo = resumo(id);
-        return toResponse(obter(id), resumo.recebido(), resumo.sinalPago(), referencia(id));
+        return ProjetoMapper.toResponse(projeto, resumo.recebido(), resumo.sinalPago(),
+                referencia(id, tatuadorId));
     }
 
     @Transactional(readOnly = true)
-    public List<ProjetoResponse> listarPorCliente(Integer clienteId) {
-        return projetos.findByClienteIdOrderByIdDesc(clienteId).stream()
+    public List<ProjetoResponse> listarPorCliente(Integer clienteId, Integer tatuadorId) {
+        obterClienteDoTatuador(clienteId, tatuadorId);
+        // stream().map().toList() percorre a lista, converte cada Projeto
+        // para seu DTO e reúne os resultados em uma nova lista.
+        return projetos.findByClienteIdAndTatuadorIdOrderByIdDesc(clienteId, tatuadorId).stream()
                 .map(projeto -> {
                     Resumo resumo = resumo(projeto.getId());
-                    return toResponse(projeto, resumo.recebido(), resumo.sinalPago(), referencia(projeto.getId()));
+                    return ProjetoMapper.toResponse(projeto, resumo.recebido(), resumo.sinalPago(),
+                            referencia(projeto.getId(), tatuadorId));
                 }).toList();
     }
 
     @Transactional
-    public ProjetoResponse criar(ProjetoInput input) {
+    public ProjetoResponse criar(ProjetoInput input, Integer tatuadorId) {
         validarValores(input);
-        Projeto projeto = new Projeto(obterTatuador(input.tatuadorId()), obterCliente(input.clienteId()),
+        Projeto projeto = new Projeto(obterTatuador(tatuadorId),
+                obterClienteDoTatuador(input.clienteId(), tatuadorId),
                 nomeProjeto(input), input.descricao(), input.linkPasta(), input.statusProjeto(),
                 input.valorTotal(), input.valorSinal(), input.quantidadeSessoes(), input.dataValidade(),
                 input.lembretePre(), input.lembretePost());
         aplicarCaracteristicas(projeto, input);
         // Projeto novo: nenhuma movimentação possível ainda
         Projeto salvo = projetos.save(projeto);
-        return toResponse(salvo, BigDecimal.ZERO, false, referencia(salvo.getId()));
+        return ProjetoMapper.toResponse(salvo, BigDecimal.ZERO, false, referencia(salvo.getId(), tatuadorId));
     }
 
     @Transactional
-    public ProjetoResponse atualizar(Integer id, ProjetoInput input) {
+    public ProjetoResponse atualizar(Integer id, ProjetoInput input, Integer tatuadorId) {
         validarValores(input);
-        Projeto projeto = obter(id);
-        projeto.vincular(obterTatuador(input.tatuadorId()), obterCliente(input.clienteId()));
+        Projeto projeto = obterDoTatuador(id, tatuadorId);
+        projeto.vincular(obterTatuador(tatuadorId), obterClienteDoTatuador(input.clienteId(), tatuadorId));
         projeto.atualizar(nomeProjeto(input), input.descricao(), input.linkPasta(), input.statusProjeto(),
                 input.valorTotal(), input.valorSinal(), input.quantidadeSessoes(), input.dataValidade(),
                 input.lembretePre(), input.lembretePost());
         aplicarCaracteristicas(projeto, input);
         Resumo resumo = resumo(id);
-        return toResponse(projeto, resumo.recebido(), resumo.sinalPago(), referencia(id));
+        return ProjetoMapper.toResponse(projeto, resumo.recebido(), resumo.sinalPago(),
+                referencia(id, tatuadorId));
     }
 
     @Transactional
-    public ProjetoResponse alterarStatus(Integer id, StatusRequest input) {
-        Projeto projeto = obter(id);
+    public ProjetoResponse alterarStatus(Integer id, StatusRequest input, Integer tatuadorId) {
+        Projeto projeto = obterDoTatuador(id, tatuadorId);
         projeto.alterarStatus(input.status());
         Resumo resumo = resumo(id);
-        return toResponse(projeto, resumo.recebido(), resumo.sinalPago(), referencia(id));
+        return ProjetoMapper.toResponse(projeto, resumo.recebido(), resumo.sinalPago(),
+                referencia(id, tatuadorId));
     }
 
     @Transactional
-    public void excluir(Integer id) {
-        Projeto projeto = obter(id);
-        // as imagens saem do banco em cascata (ON DELETE CASCADE); aqui limpamos também o Cloudinary
-        List<String> publicIds = imagens.listarPublicIds(id);
+    public void excluir(Integer id, Integer tatuadorId) {
+        Projeto projeto = obterDoTatuador(id, tatuadorId);
+        // as imagens saem do banco em cascata (ON DELETE CASCADE); aqui limpamos também o armazenamento
+        List<String> publicIds = imagens.listarPublicIds(id, tatuadorId);
         projetos.delete(projeto);
-        projetos.flush(); // se houver sessões/movimentações, a violação de FK estoura aqui, antes de tocar no Cloudinary
-        publicIds.forEach(cloudinary::remover);
+        projetos.flush(); // se houver sessões/movimentações, a violação de FK estoura aqui, antes de tocar no storage
+        publicIds.forEach(armazenamento::remover);
     }
 
-    private Resumo resumo(Integer projetoId) {
+    /** Carrega o projeto garantindo que pertence ao tatuador autenticado. */
+    @Transactional(readOnly = true)
+    public Projeto obterDoTatuador(Integer id, Integer tatuadorId) {
+        return projetos.findByIdAndTatuadorId(id, tatuadorId)
+                .orElseThrow(() -> new ResourceNotFoundException("Projeto", id));
+    }
+
+    /** Recebido e sinal pago calculados a partir das movimentações. */
+    @Transactional(readOnly = true)
+    public Resumo resumo(Integer projetoId) {
         BigDecimal recebido = movimentacoes.somarRecebido(projetoId);
         boolean sinalPago = movimentacoes.existsByProjetoIdAndCategoriaIgnoreCaseAndStatusPagamentoIgnoreCase(
                 projetoId, "sinal", "pago");
@@ -145,19 +170,17 @@ public class ProjetoService {
         return input.nome() == null || input.nome().isBlank() ? input.descricao() : input.nome().trim();
     }
 
-    private Projeto obter(Integer id) {
-        return projetos.findById(id).orElseThrow(() -> new ResourceNotFoundException("Projeto", id));
-    }
-
-    private Cliente obterCliente(Integer id) {
-        return clientes.findById(id).orElseThrow(() -> new ResourceNotFoundException("Cliente", id));
+    private Cliente obterClienteDoTatuador(Integer id, Integer tatuadorId) {
+        return clientes.findByIdAndTatuadorId(id, tatuadorId)
+                .orElseThrow(() -> new ResourceNotFoundException("Cliente", id));
     }
 
     private Tatuador obterTatuador(Integer id) {
         return tatuadores.findById(id).orElseThrow(() -> new ResourceNotFoundException("Tatuador", id));
     }
 
-    private Imagem referencia(Integer projetoId) {
-        return imagens.findFirstByProjetoIdOrderByCriadoEmDesc(projetoId).orElse(null);
+    private Imagem referencia(Integer projetoId, Integer tatuadorId) {
+        return imagens.findFirstByProjetoIdAndProjeto_Tatuador_IdOrderByCriadoEmDesc(projetoId, tatuadorId)
+                .orElse(null);
     }
 }

@@ -54,14 +54,14 @@ INSERT INTO preferencias_cliente (
     (7104, 'MPB', 'Cafe', 'Fine line', 2300.00, 'R$ 2.000 a R$ 3.000', 'Horario comercial', 'Noite e sabado', 'Lead ficticio para acompanhamento comercial');
 
 INSERT INTO cliente (
-    id, nome, telefone, cpf, instagram, canal_aquisicao,
+    id, tatuador_id, nome, telefone, cpf, instagram, canal_aquisicao,
     link_conversa, link_pasta, localizacao, tamanho,
     ideia, status, data_criacao, preferencias_cliente_id
 ) VALUES
-    (7201, 'Caio Freitas (FICTICIO)', '(11) 90000-1002', '000.000.000-02', '@caio.mock', 'Indicacao', 'https://wa.me/550000000002', 'https://drive.local/mock/caio', 'Osasco/SP', 'Grande', 'Fechamento blackwork braco esquerdo', 'CLIENTE', TIMESTAMP '2026-10-01 10:00:00', 7101),
-    (7202, 'Marina Alves (FICTICIO)', '(11) 90000-1003', '000.000.000-03', '@marina.mock', 'Google', 'https://wa.me/550000000003', 'https://drive.local/mock/marina', 'Santo Andre/SP', 'Pequeno', 'Tatuagem minimalista no tornozelo', 'Interessado', TIMESTAMP '2026-10-07 09:30:00', 7102),
-    (7203, 'Sofia Nunes (FICTICIO)', '(11) 90000-1005', '000.000.000-05', '@sofia.mock', 'Instagram', 'https://wa.me/550000000005', 'https://drive.local/mock/sofia', 'Sao Paulo/SP', 'Grande', 'Dragao oriental costas', 'CLIENTE', TIMESTAMP '2026-08-15 15:45:00', 7103),
-    (7204, 'Laura Menezes (FICTICIO)', '(11) 90000-1001', '000.000.000-01', '@laura.mock', 'WhatsApp', 'https://wa.me/550000000001', 'https://drive.local/mock/laura', 'Sao Paulo/SP', 'Medio', 'Floral no antebraco', 'Interessado', TIMESTAMP '2026-10-10 14:20:00', 7104);
+    (7201, 7001, 'Caio Freitas (FICTICIO)', '(11) 90000-1002', '000.000.000-02', '@caio.mock', 'Indicacao', 'https://wa.me/550000000002', 'https://drive.local/mock/caio', 'Osasco/SP', 'Grande', 'Fechamento blackwork braco esquerdo', 'CLIENTE', TIMESTAMP '2026-10-01 10:00:00', 7101),
+    (7202, 7001, 'Marina Alves (FICTICIO)', '(11) 90000-1003', '000.000.000-03', '@marina.mock', 'Google', 'https://wa.me/550000000003', 'https://drive.local/mock/marina', 'Santo Andre/SP', 'Pequeno', 'Tatuagem minimalista no tornozelo', 'Interessado', TIMESTAMP '2026-10-07 09:30:00', 7102),
+    (7203, 7001, 'Sofia Nunes (FICTICIO)', '(11) 90000-1005', '000.000.000-05', '@sofia.mock', 'Instagram', 'https://wa.me/550000000005', 'https://drive.local/mock/sofia', 'Sao Paulo/SP', 'Grande', 'Dragao oriental costas', 'CLIENTE', TIMESTAMP '2026-08-15 15:45:00', 7103),
+    (7204, 7001, 'Laura Menezes (FICTICIO)', '(11) 90000-1001', '000.000.000-01', '@laura.mock', 'WhatsApp', 'https://wa.me/550000000001', 'https://drive.local/mock/laura', 'Sao Paulo/SP', 'Medio', 'Floral no antebraco', 'Interessado', TIMESTAMP '2026-10-10 14:20:00', 7104);
 
 INSERT INTO anamnese (id, cliente_id, dados_saude, preparacao_tatuagem) VALUES
     (7251, 7201, 'Sem restricoes', 'Hidratar 48h antes'),

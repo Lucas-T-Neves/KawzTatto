@@ -4,8 +4,9 @@ import com.kawz.tattoo.api.sessao.dto.SessaoInput;
 import com.kawz.tattoo.api.sessao.dto.SessaoRemarcarInput;
 import com.kawz.tattoo.api.sessao.dto.SessaoResponse;
 import com.kawz.tattoo.api.web.Paginacao;
-import com.kawz.tattoo.domain.sessao.SessaoService;
+import com.kawz.tattoo.application.security.TatuadorAutenticado;
 import com.kawz.tattoo.domain.exception.BusinessException;
+import com.kawz.tattoo.domain.sessao.SessaoService;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -17,9 +18,14 @@ import java.time.LocalDate;
 @RestController
 @RequestMapping("/api/v1/sessoes")
 public class SessaoController {
-    private final SessaoService service;
 
-    public SessaoController(SessaoService service) { this.service = service; }
+    private final SessaoService service;
+    private final TatuadorAutenticado tatuadorAutenticado;
+
+    public SessaoController(SessaoService service, TatuadorAutenticado tatuadorAutenticado) {
+        this.service = service;
+        this.tatuadorAutenticado = tatuadorAutenticado;
+    }
 
     @GetMapping
     public Page<SessaoResponse> listar(
@@ -28,8 +34,11 @@ public class SessaoController {
             @RequestParam(defaultValue = "0") int pagina,
             @RequestParam(defaultValue = "20") int tamanho) {
         Pageable pageable = Paginacao.de(pagina, tamanho);
-        if (dataApos != null) return service.listarPorDataApos(dataApos.atStartOfDay(), pageable);
-        return projetoId == null ? service.listar(pageable) : service.listarPorProjeto(projetoId, pageable);
+        Integer tatuadorId = tatuadorAutenticado.id();
+        if (dataApos != null) return service.listarPorDataApos(dataApos.atStartOfDay(), tatuadorId, pageable);
+        return projetoId == null
+                ? service.listar(tatuadorId, pageable)
+                : service.listarPorProjeto(projetoId, tatuadorId, pageable);
     }
 
     @GetMapping("/calendario")
@@ -39,28 +48,34 @@ public class SessaoController {
                                            @RequestParam(defaultValue = "100") int tamanho) {
         if (fim.isBefore(inicio)) throw new BusinessException("fim não pode ser anterior a inicio");
         return service.listarPorPeriodo(inicio.atStartOfDay(), fim.plusDays(1).atStartOfDay(),
-                Paginacao.de(pagina, tamanho));
+                tatuadorAutenticado.id(), Paginacao.de(pagina, tamanho));
     }
 
     @GetMapping("/{id}")
-    public SessaoResponse buscar(@PathVariable Integer id) { return service.buscar(id); }
+    public SessaoResponse buscar(@PathVariable Integer id) {
+        return service.buscar(id, tatuadorAutenticado.id());
+    }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public SessaoResponse criar(@Valid @RequestBody SessaoInput input) { return service.criar(input); }
+    public SessaoResponse criar(@Valid @RequestBody SessaoInput input) {
+        return service.criar(input, tatuadorAutenticado.id());
+    }
 
     @PutMapping("/{id}")
     public SessaoResponse atualizar(@PathVariable Integer id, @Valid @RequestBody SessaoInput input) {
-        return service.atualizar(id, input);
+        return service.atualizar(id, input, tatuadorAutenticado.id());
     }
 
     @PatchMapping("/{id}/remarcar")
     public SessaoResponse remarcar(@PathVariable Integer id,
                                    @Valid @RequestBody SessaoRemarcarInput input) {
-        return service.remarcar(id, input.dataHorario());
+        return service.remarcar(id, input.dataHorario(), tatuadorAutenticado.id());
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void excluir(@PathVariable Integer id) { service.excluir(id); }
+    public void excluir(@PathVariable Integer id) {
+        service.excluir(id, tatuadorAutenticado.id());
+    }
 }

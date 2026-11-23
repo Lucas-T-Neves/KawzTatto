@@ -3,6 +3,7 @@ package com.kawz.tattoo.domain.cliente;
 import com.kawz.tattoo.domain.anamnese.Anamnese;
 import com.kawz.tattoo.domain.preferenciascliente.PreferenciasCliente;
 import com.kawz.tattoo.domain.shared.BaseEntity;
+import com.kawz.tattoo.domain.tatuador.Tatuador;
 
 
 import jakarta.persistence.CascadeType;
@@ -10,6 +11,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.PrePersist;
@@ -22,6 +24,13 @@ import java.util.List;
 @Entity
 @Table(name = "cliente")
 public class Cliente extends BaseEntity {
+    /**
+     * Tatuador dono do cliente (derivado do token na criação). É a base da
+     * autorização por proprietário: toda consulta de cliente filtra por ele.
+     */
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "tatuador_id", nullable = false)
+    private Tatuador tatuador;
     @Column(nullable = false, length = 150)
     private String nome;
     @Column(length = 20)
@@ -57,9 +66,11 @@ public class Cliente extends BaseEntity {
 
     protected Cliente() {}
 
-    public Cliente(String nome, String telefone, String cpf, String instagram, String canalAquisicao,
+    public Cliente(Tatuador tatuador, String nome, String telefone, String cpf, String instagram,
+                   String canalAquisicao,
                    String linkConversa, String linkPasta, String localizacao,
                    String tamanho, String ideia, String status) {
+        this.tatuador = tatuador;
         atualizarCadastro(nome, telefone, cpf, instagram, canalAquisicao, linkConversa, linkPasta,
                 localizacao, tamanho, ideia, status);
         this.anamneses.add(new Anamnese(this, null, null));
@@ -100,6 +111,7 @@ public class Cliente extends BaseEntity {
 
     public void converterEmCliente() { this.status = "CLIENTE"; }
 
+    public Tatuador getTatuador() { return tatuador; }
     public String getNome() { return nome; }
     public String getTelefone() { return telefone; }
     public String getCpf() { return cpf; }

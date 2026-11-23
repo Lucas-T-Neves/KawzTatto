@@ -1,13 +1,12 @@
 package com.kawz.tattoo.domain.movimentacao;
 
+import com.kawz.tattoo.api.movimentacao.MovimentacaoMapper;
 import com.kawz.tattoo.api.movimentacao.dto.MovimentacaoInput;
 import com.kawz.tattoo.api.movimentacao.dto.MovimentacaoResponse;
 import com.kawz.tattoo.api.movimentacao.dto.MovimentacaoResumoResponse;
 import com.kawz.tattoo.domain.exception.BusinessException;
 import com.kawz.tattoo.domain.exception.ResourceNotFoundException;
-import com.kawz.tattoo.domain.movimentacao.MovimentacaoFinanceira;
 import com.kawz.tattoo.domain.projeto.Projeto;
-import com.kawz.tattoo.domain.movimentacao.MovimentacaoFinanceiraRepository;
 import com.kawz.tattoo.domain.projeto.ProjetoRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -19,10 +18,14 @@ import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.List;
 
-import static com.kawz.tattoo.api.movimentacao.mapper.MovimentacaoApiMapper.toResponse;
-
+/**
+ * Movimentações financeiras dos projetos do tatuador autenticado. O financeiro é
+ * sempre recortado pelo dono do projeto: um tatuador não vê nem altera valores
+ * de outro.
+ */
 @Service
 public class MovimentacaoService {
+
     private final MovimentacaoFinanceiraRepository movimentacoes;
     private final ProjetoRepository projetos;
 
@@ -32,56 +35,54 @@ public class MovimentacaoService {
     }
 
     @Transactional(readOnly = true)
-    public Page<MovimentacaoResponse> listar(String mes, String status, Integer projetoId,
-                                              Integer clienteId, Pageable pageable) {
+    public Page<MovimentacaoResponse> listar(Integer tatuadorId, String mes, String status, Integer projetoId,
+                                             Integer clienteId, Pageable pageable) {
         LocalDate inicio = null;
         LocalDate fim = null;
         if (mes != null && !mes.isBlank()) {
-            try {
-                YearMonth periodo = YearMonth.parse(mes);
-                inicio = periodo.atDay(1);
-                fim = periodo.plusMonths(1).atDay(1);
-            } catch (RuntimeException ex) {
-                throw new BusinessException("O parâmetro mes deve estar no formato YYYY-MM");
-            }
+            YearMonth periodo = periodo(mes);
+            inicio = periodo.atDay(1);
+            fim = periodo.plusMonths(1).atDay(1);
         }
-        return movimentacoes.buscar(inicio, fim, normalizar(status), projetoId, clienteId, pageable)
-                .map(com.kawz.tattoo.api.movimentacao.mapper.MovimentacaoApiMapper::toResponse);
+        return movimentacoes.buscar(tatuadorId, inicio, fim, normalizar(status), projetoId, clienteId, pageable)
+                .map(MovimentacaoMapper::toResponse);
     }
 
     @Transactional(readOnly = true)
-    public MovimentacaoResponse buscar(Integer id) { return toResponse(obter(id)); }
-
-    @Transactional(readOnly = true)
-    public Page<MovimentacaoResponse> listarPorProjeto(Integer projetoId, Pageable pageable) {
-        return movimentacoes.findByProjetoIdOrderByDataOcorrenciaDesc(projetoId, pageable)
-                .map(com.kawz.tattoo.api.movimentacao.mapper.MovimentacaoApiMapper::toResponse);
+    public MovimentacaoResponse buscar(Integer id, Integer tatuadorId) {
+        return MovimentacaoMapper.toResponse(obterDoTatuador(id, tatuadorId));
     }
 
     @Transactional(readOnly = true)
-    public MovimentacaoResponse buscarPorProjeto(Integer projetoId, Integer id) {
-        MovimentacaoFinanceira movimentacao = obter(id);
+    public Page<MovimentacaoResponse> listarPorProjeto(Integer projetoId, Integer tatuadorId, Pageable pageable) {
+        obterProjetoDoTatuador(projetoId, tatuadorId);
+        // Page.map converte a página de movimentações do projeto sem
+        // reconstruí-la manualmente com PageImpl.
+        return movimentacoes.findByProjetoIdAndProjeto_Tatuador_IdOrderByDataOcorrenciaDesc(
+                        projetoId, tatuadorId, pageable)
+                .map(MovimentacaoMapper::toResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public MovimentacaoResponse buscarPorProjeto(Integer projetoId, Integer id, Integer tatuadorId) {
+        MovimentacaoFinanceira movimentacao = obterDoTatuador(id, tatuadorId);
         if (!movimentacao.getProjeto().getId().equals(projetoId)) {
             throw new ResourceNotFoundException("MovimentacaoFinanceira", id);
         }
-        return toResponse(movimentacao);
+        return MovimentacaoMapper.toResponse(movimentacao);
     }
 
     @Transactional(readOnly = true)
-    public MovimentacaoResumoResponse resumo(String mes) {
+    public MovimentacaoResumoResponse resumo(String mes, Integer tatuadorId) {
         if (mes == null || mes.isBlank()) {
             throw new BusinessException("O parâmetro mes é obrigatório no formato YYYY-MM");
         }
-        final YearMonth periodo;
-        try {
-            periodo = YearMonth.parse(mes);
-        } catch (RuntimeException ex) {
-            throw new BusinessException("O parâmetro mes deve estar no formato YYYY-MM");
-        }
+        YearMonth periodo = periodo(mes);
         LocalDate inicio = periodo.atDay(1);
         LocalDate fim = periodo.plusMonths(1).atDay(1);
         List<MovimentacaoFinanceira> doMes =
-                movimentacoes.findByDataOcorrenciaGreaterThanEqualAndDataOcorrenciaLessThan(inicio, fim);
+                movimentacoes.findByProjeto_Tatuador_IdAndDataOcorrenciaGreaterThanEqualAndDataOcorrenciaLessThan(
+                        tatuadorId, inicio, fim);
         BigDecimal receita = BigDecimal.ZERO;
         BigDecimal despesas = BigDecimal.ZERO;
         BigDecimal receitasPendentes = BigDecimal.ZERO;
@@ -102,36 +103,47 @@ public class MovimentacaoService {
     }
 
     @Transactional
-    public MovimentacaoResponse criar(MovimentacaoInput input) {
-        Projeto projeto = obterProjeto(input.projetoId());
+    public MovimentacaoResponse criar(MovimentacaoInput input, Integer tatuadorId) {
+        Projeto projeto = obterProjetoDoTatuador(input.projetoId(), tatuadorId);
         MovimentacaoFinanceira movimentacao = new MovimentacaoFinanceira(projeto,
                 input.naturezaTransacao(), input.categoria(), input.dataOcorrencia(),
                 input.valorMonetario(), input.formaPagamento(), input.statusPagamento());
         movimentacao.registrar();
         atualizarStatusClientePorSinal(movimentacao);
-        return toResponse(movimentacoes.save(movimentacao));
+        return MovimentacaoMapper.toResponse(movimentacoes.save(movimentacao));
     }
 
     @Transactional
-    public MovimentacaoResponse atualizar(Integer id, MovimentacaoInput input) {
-        MovimentacaoFinanceira movimentacao = obter(id);
-        movimentacao.vincularProjeto(obterProjeto(input.projetoId()));
+    public MovimentacaoResponse atualizar(Integer id, MovimentacaoInput input, Integer tatuadorId) {
+        MovimentacaoFinanceira movimentacao = obterDoTatuador(id, tatuadorId);
+        movimentacao.vincularProjeto(obterProjetoDoTatuador(input.projetoId(), tatuadorId));
         movimentacao.atualizar(input.naturezaTransacao(), input.categoria(), input.dataOcorrencia(),
                 input.valorMonetario(), input.formaPagamento(), input.statusPagamento());
         atualizarStatusClientePorSinal(movimentacao);
-        return toResponse(movimentacao);
+        return MovimentacaoMapper.toResponse(movimentacao);
     }
 
     @Transactional
-    public void excluir(Integer id) { movimentacoes.delete(obter(id)); }
+    public void excluir(Integer id, Integer tatuadorId) {
+        movimentacoes.delete(obterDoTatuador(id, tatuadorId));
+    }
 
-    private MovimentacaoFinanceira obter(Integer id) {
-        return movimentacoes.findById(id)
+    private MovimentacaoFinanceira obterDoTatuador(Integer id, Integer tatuadorId) {
+        return movimentacoes.findByIdAndProjeto_Tatuador_Id(id, tatuadorId)
                 .orElseThrow(() -> new ResourceNotFoundException("MovimentacaoFinanceira", id));
     }
 
-    private Projeto obterProjeto(Integer id) {
-        return projetos.findById(id).orElseThrow(() -> new ResourceNotFoundException("Projeto", id));
+    private Projeto obterProjetoDoTatuador(Integer id, Integer tatuadorId) {
+        return projetos.findByIdAndTatuadorId(id, tatuadorId)
+                .orElseThrow(() -> new ResourceNotFoundException("Projeto", id));
+    }
+
+    private YearMonth periodo(String mes) {
+        try {
+            return YearMonth.parse(mes);
+        } catch (RuntimeException ex) {
+            throw new BusinessException("O parâmetro mes deve estar no formato YYYY-MM");
+        }
     }
 
     private String normalizar(String valor) {
@@ -146,5 +158,4 @@ public class MovimentacaoService {
             movimentacao.getProjeto().getCliente().converterEmCliente();
         }
     }
-
 }

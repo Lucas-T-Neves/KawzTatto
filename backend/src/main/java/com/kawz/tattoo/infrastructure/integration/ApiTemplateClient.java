@@ -12,7 +12,7 @@ import java.util.Map;
 
 /** Gera o PDF do contrato no APITemplate.io (POST /v2/create-pdf?template_id=...). */
 @Component
-public class ApiTemplateClient {
+public class  ApiTemplateClient {
 
     public record PdfGerado(String downloadUrl, String transactionRef) {}
 

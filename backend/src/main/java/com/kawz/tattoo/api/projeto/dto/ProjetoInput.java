@@ -9,7 +9,8 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 public record ProjetoInput(
-            @NotNull Integer tatuadorId,
+            /* tatuadorId enviado pelo frontend: aceito e ignorado (o dono vem do token) */
+            Integer tatuadorId,
             @NotNull Integer clienteId,
             @Size(max = 150) String nome,
             @NotBlank @Size(max = 10000) String descricao,

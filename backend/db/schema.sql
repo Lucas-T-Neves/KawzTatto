@@ -63,6 +63,9 @@ CREATE TABLE tatuador (
 -- ---------------------------------------------------------
 CREATE TABLE cliente (
   id INT NOT NULL AUTO_INCREMENT,
+  -- Dono do cliente: base da autorizacao por proprietario (todo SELECT de
+  -- cliente/follow-up/anamnese filtra por esta coluna).
+  tatuador_id INT NOT NULL,
   nome VARCHAR(150) NOT NULL,
   telefone VARCHAR(20) NULL,
   cpf VARCHAR(20) NULL,
@@ -78,8 +81,11 @@ CREATE TABLE cliente (
   preferencias_cliente_id INT NULL,
   PRIMARY KEY (id),
   UNIQUE KEY uq_cliente_preferencias (preferencias_cliente_id),
+  KEY idx_cliente_tatuador (tatuador_id),
   CONSTRAINT fk_cliente_preferencias
-    FOREIGN KEY (preferencias_cliente_id) REFERENCES preferencias_cliente (id)
+    FOREIGN KEY (preferencias_cliente_id) REFERENCES preferencias_cliente (id),
+  CONSTRAINT fk_cliente_tatuador
+    FOREIGN KEY (tatuador_id) REFERENCES tatuador (id)
 );
 
 -- 1 cliente -> 1 ou muitas anamneses (FK na anamnese; correção do DER)
@@ -250,7 +256,8 @@ SELECT
   c.data_assinatura,
   c.status_contrato,
   c.pdf_url,
-  c.transaction_ref
+  c.transaction_ref,
+  p.tatuador_id                AS tatuador_id
 FROM contrato c
 JOIN projeto p  ON p.contrato_id = c.id
 JOIN tatuador t ON t.id = p.tatuador_id

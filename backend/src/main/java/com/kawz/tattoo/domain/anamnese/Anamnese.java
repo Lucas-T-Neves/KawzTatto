@@ -24,7 +24,7 @@ public class Anamnese extends BaseEntity {
     @Column(name = "preparacao_tatuagem", length = 45)
     private String preparacaoTatuagem;
 
-    protected Anamnese() {}
+    public Anamnese() {}
     public Anamnese(Cliente cliente, String dadosSaude, String preparacaoTatuagem) {
         this.cliente = cliente;
         atualizarInformacoes(dadosSaude, preparacaoTatuagem);
@@ -38,4 +38,16 @@ public class Anamnese extends BaseEntity {
     public Cliente getCliente() { return cliente; }
     public String getDadosSaude() { return dadosSaude; }
     public String getPreparacaoTatuagem() { return preparacaoTatuagem; }
+
+    public void setCliente(Cliente cliente) {
+        this.cliente = cliente;
+    }
+
+    public void setDadosSaude(String dadosSaude) {
+        this.dadosSaude = dadosSaude;
+    }
+
+    public void setPreparacaoTatuagem(String preparacaoTatuagem) {
+        this.preparacaoTatuagem = preparacaoTatuagem;
+    }
 }
