@@ -35,9 +35,11 @@ import {
   Pencil,
   Plus,
   Search,
+  Filter,
   Home,
   Folder,
   Trash2,
+  X,
 } from "lucide-react"
 import DateTimeField from "./DateTimeField.jsx"
 import useScrollVisibility from "./useScrollVisibility.js"
@@ -284,6 +286,7 @@ export function Workspace({ onExit, profile, page }) {
   const [tab, setTab] = useState("Dados")
   const [query, setQuery] = useState("")
   const [filter, setFilter] = useState("Todos")
+  const [recordsPopover, setRecordsPopover] = useState("")
   const [period, setPeriod] = useState(today().slice(0, 7))
   const [focus, setFocus] = useState(today())
   const [view, setView] = useState("Mês")
@@ -928,7 +931,7 @@ export function Workspace({ onExit, profile, page }) {
                 }`,
               )}
             >
-              {!collapsed && label}
+              {label}
             </Button>
           ))}
         </SidebarNavigation>
@@ -975,7 +978,9 @@ export function Workspace({ onExit, profile, page }) {
                   className={cssClass("page-title")}
                 >
                   {effectiveContext?.name ||
-                    (page === "Início" ? `Olá, ${profile.name.trim()}!` : page)}
+                    (page === "Início"
+                      ? `Olá, ${(profile.name || "").trim().split(/\s+/)[0] || "usuário"}!`
+                      : page)}
                 </div>
                 {effectiveContext && (
                   <span
@@ -997,10 +1002,15 @@ export function Workspace({ onExit, profile, page }) {
               </div>
             </div>
             <div className={cssClass("action-row")}>
-               {page === "Financeiro" && (
-                 <>
-                   <MonthPicker value={period} onChange={setPeriod} />
-                    <FinanceActions onCreate={(kind) => open("Financeiro", undefined, { kind })} />
+              {page === "Início" && !effectiveContext && (
+                <Button variant="subtle" onClick={() => navigate("Agenda")}>
+                  Ver agenda
+                </Button>
+              )}
+                {page === "Financeiro" && (
+                  <>
+                    <MonthPicker value={period} onChange={setPeriod} />
+                     <FinanceActions onCreate={(kind) => open("Financeiro", undefined, { kind })} />
                   </>
                 )}
               {page !== "Início" &&
@@ -1053,13 +1063,6 @@ export function Workspace({ onExit, profile, page }) {
             <>
               <Panel
                 title="Próximos compromissos"
-                action={
-                  <div className={cssClass("action-row")}>
-                    <Button variant="subtle" onClick={() => navigate("Agenda")}>
-                       Ver agenda →
-                     </Button>
-                  </div>
-                }
               >
                  {!apiMode ? (
                     <p role="status">Compromissos indisponíveis no momento.</p>
@@ -1591,8 +1594,8 @@ export function Workspace({ onExit, profile, page }) {
             ) : (
               <Panel title="">
                <div className={cssClass("records-toolbar")}>
-                <InputField
-                  className={cssClass("records-search")}
+                 <InputField
+                   className={cssClass("records-search")}
                    aria-label="Pesquisar"
                    placeholder={
                       page === "Clientes"
@@ -1600,20 +1603,71 @@ export function Workspace({ onExit, profile, page }) {
                         : "Nome do projeto"
                     }
                   prefix={<Search className={cssClass("control-icon")} />}
-                  value={query}
-                  onChange={setQuery}
-                />
-                <div className={cssClass("compact-filter")}>
-                  {selector(
-                     "Status",
-                     filter,
-                     setFilter,
-                     page === "Clientes"
-                       ? ["Interessado", "Cliente"]
-                       : ["Todos", ...pipeline],
-                   )}
-                 </div>
-               </div>
+                   value={query}
+                   onChange={setQuery}
+                 />
+                  <div className={cssClass("popover-anchor records-filter-anchor")}>
+                    <IconButton
+                      className={cssClass("calendar-filter-button")}
+                      variant="neutral"
+                      aria-label={`Filtros de ${page.toLowerCase()}`}
+                      title="Filtros"
+                      aria-expanded={recordsPopover === "filters"}
+                      onClick={() =>
+                        setRecordsPopover(
+                          recordsPopover === "filters" ? "" : "filters",
+                        )
+                      }
+                      icon={
+                        <Filter
+                          className={cssClass("control-icon calendar-filter-icon")}
+                        />
+                      }
+                    />
+                    {recordsPopover === "filters" && (
+                      <div
+                        className={cssClass(
+                          "calendar-popover records-filter-popover floating-glass",
+                        )}
+                        role="group"
+                        aria-label={`Filtros de ${page.toLowerCase()}`}
+                      >
+                        <div className={cssClass("section-head") }>
+                          <strong>Filtrar {page.toLowerCase()}</strong>
+                          <IconButton
+                            size="small"
+                            variant="subtle"
+                            aria-label="Fechar filtros"
+                            icon={<X className={cssClass("control-icon")} />}
+                            onClick={() => setRecordsPopover("")}
+                          />
+                        </div>
+                        <div className={cssClass("calendar-filters")}>
+                          {selector(
+                            "Status",
+                            filter,
+                            setFilter,
+                            page === "Clientes"
+                              ? ["Todos", "Interessado", "Cliente"]
+                              : ["Todos", ...pipeline],
+                          )}
+                          <div className={cssClass("calendar-filters-actions")}>
+                            <Button
+                              variant="subtle"
+                              size="small"
+                              onClick={() => {
+                                setFilter("Todos")
+                                setRecordsPopover("")
+                              }}
+                            >
+                              Limpar filtros
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
               {rows(
                 list(page).filter(
                   (item) =>
