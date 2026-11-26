@@ -13,4 +13,4 @@ public record ProjetoResponse(Integer id, Integer tatuadorId, Integer clienteId,
                                   String ideiaExpectativa, String estiloArte, String localizacaoCorpo,
                                   String tamanho, String dificuldade, String cores, String complexidade,
                                   Integer referenceId, String referenceName, String referenceUrl,
-                                  Integer contratoId, Integer caracteristicasProjetoId) {}
+                                  Integer caracteristicasProjetoId) {}

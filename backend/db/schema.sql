@@ -25,19 +25,6 @@ CREATE TABLE preferencias_cliente (
   PRIMARY KEY (id)
 );
 
-CREATE TABLE contrato (
-  id INT NOT NULL AUTO_INCREMENT,
-  limite_alteracoes_arte VARCHAR(45) NULL,
-  tolerancia_atraso VARCHAR(45) NULL,
-  uso_imagem VARCHAR(45) NULL,
-  data_assinatura DATE NULL,
-  status_contrato VARCHAR(45) NULL,
-  pdf_url VARCHAR(1000) NULL,
-  criado_em DATETIME NULL,
-  transaction_ref VARCHAR(100) NULL,
-  PRIMARY KEY (id)
-);
-
 CREATE TABLE caracteristicas_projeto (
   id INT NOT NULL AUTO_INCREMENT,
   ideia_expectativa TEXT NULL,
@@ -54,6 +41,8 @@ CREATE TABLE tatuador (
   nome VARCHAR(100) NOT NULL,
   email VARCHAR(150) NOT NULL,
   senha VARCHAR(255) NOT NULL,
+  logo_url VARCHAR(1000) NULL,
+  logo_public_id VARCHAR(255) NULL,
   PRIMARY KEY (id),
   UNIQUE KEY uq_tatuador_email (email)
 );
@@ -91,6 +80,27 @@ CREATE TABLE cliente (
 -- 1 cliente -> 1 ou muitas anamneses (FK na anamnese; correção do DER)
 CREATE TABLE anamnese (
   id INT NOT NULL AUTO_INCREMENT,
+  logo_url VARCHAR(1000) NULL,
+  nome VARCHAR(150) NULL,
+  data_nascimento DATE NULL,
+  ocupacao VARCHAR(120) NULL,
+  telefone VARCHAR(20) NULL,
+  whatsapp BOOLEAN NULL,
+  endereco VARCHAR(500) NULL,
+  rg VARCHAR(30) NULL,
+  cpf VARCHAR(20) NULL,
+  saude_json LONGTEXT NULL,
+  data_assinatura DATE NULL,
+  assinatura_url VARCHAR(1000) NULL,
+  procedimento_json LONGTEXT NULL,
+  pdf_url VARCHAR(1000) NULL,
+  transaction_ref VARCHAR(100) NULL,
+  documento_assinado_url VARCHAR(1000) NULL,
+  documento_assinado_public_id VARCHAR(255) NULL,
+  documento_assinado_nome VARCHAR(255) NULL,
+  documento_assinado_mime VARCHAR(100) NULL,
+  documento_assinado_bytes BIGINT NULL,
+  documento_assinado_em TIMESTAMP NULL,
   dados_saude VARCHAR(45) NULL,
   preparacao_tatuagem VARCHAR(45) NULL,
   cliente_id INT NOT NULL,
@@ -146,16 +156,12 @@ CREATE TABLE projeto (
   quantidade_sessoes INT NULL,
   data_validade DATE NULL,
   caracteristicas_projeto_id INT NOT NULL,
-  contrato_id INT NOT NULL,
   tatuador_id INT NOT NULL,
   cliente_id INT NOT NULL,
   PRIMARY KEY (id),
-  UNIQUE KEY uq_projeto_contrato (contrato_id),
   UNIQUE KEY uq_projeto_caracteristicas (caracteristicas_projeto_id),
   CONSTRAINT fk_projeto_caracteristicas
     FOREIGN KEY (caracteristicas_projeto_id) REFERENCES caracteristicas_projeto (id),
-  CONSTRAINT fk_projeto_contrato
-    FOREIGN KEY (contrato_id) REFERENCES contrato (id),
   CONSTRAINT fk_projeto_tatuador
     FOREIGN KEY (tatuador_id) REFERENCES tatuador (id),
   CONSTRAINT fk_projeto_cliente
@@ -172,10 +178,21 @@ CREATE TABLE sessao (
   status_sessao VARCHAR(45) NULL,
   observacoes_sessao VARCHAR(45) NULL,
   evento_calendario_id VARCHAR(100) NULL,
+  duracao_horas INT NULL,
   projeto_id INT NOT NULL,
   PRIMARY KEY (id),
   CONSTRAINT fk_sessao_projeto
     FOREIGN KEY (projeto_id) REFERENCES projeto (id)
+);
+
+CREATE TABLE agenda_sync_pendente (
+  id INT NOT NULL AUTO_INCREMENT,
+  sessao_id INT NOT NULL,
+  operacao VARCHAR(30) NOT NULL,
+  tentativas INT NOT NULL DEFAULT 0,
+  ultima_tentativa TIMESTAMP NULL,
+  PRIMARY KEY (id),
+  CONSTRAINT fk_agenda_sync_sessao FOREIGN KEY (sessao_id) REFERENCES sessao (id)
 );
 
 CREATE TABLE imagem (
@@ -225,41 +242,3 @@ CREATE TABLE orcamento (
   CONSTRAINT fk_orcamento_cliente
     FOREIGN KEY (cliente_id) REFERENCES cliente (id)
 );
-
--- ---------------------------------------------------------
--- 5. View de Contratos (Ajustada para o DER novo)
--- ---------------------------------------------------------
-CREATE OR REPLACE VIEW vw_contratos AS
-SELECT
-  c.id                         AS contrato_id,
-  cl.nome                      AS nome_cliente,
-  cl.telefone                  AS telefone_cliente,
-  cl.cpf                       AS cpf_cliente,
-  t.nome                       AS nome_artista,
-  p.descricao                  AS descricao_tatuagem,
-  cp.localizacao_corpo         AS local_corpo,
-  (SELECT DATE(MIN(s.data_horario)) FROM sessao s WHERE s.projeto_id = p.id) AS data_inicio,
-  (SELECT DATE(MAX(s.data_horario)) FROM sessao s WHERE s.projeto_id = p.id) AS data_fim,
-  p.valor_total                AS valor_orcado,
-  EXISTS (
-    SELECT 1 FROM movimentacao_financeira m
-    WHERE m.projeto_id = p.id
-      AND m.categoria = 'sinal'
-      AND m.status_pagamento = 'pago'
-  )                            AS sinal_pago,
-  (SELECT m.forma_pagamento FROM movimentacao_financeira m
-    WHERE m.projeto_id = p.id AND m.status_pagamento = 'pago'
-    ORDER BY m.data_ocorrencia IS NULL, m.data_ocorrencia DESC, m.id DESC LIMIT 1) AS forma_pagamento,
-  c.limite_alteracoes_arte,
-  c.tolerancia_atraso,
-  c.uso_imagem,
-  c.data_assinatura,
-  c.status_contrato,
-  c.pdf_url,
-  c.transaction_ref,
-  p.tatuador_id                AS tatuador_id
-FROM contrato c
-JOIN projeto p  ON p.contrato_id = c.id
-JOIN tatuador t ON t.id = p.tatuador_id
-JOIN cliente cl ON cl.id = p.cliente_id
-LEFT JOIN caracteristicas_projeto cp ON cp.id = p.caracteristicas_projeto_id;

@@ -6,6 +6,7 @@ import com.kawz.tattoo.api.sessao.dto.SessaoResponse;
 import com.kawz.tattoo.application.gateway.AgendaGateway;
 import com.kawz.tattoo.domain.cliente.ClienteRepository;
 import com.kawz.tattoo.domain.exception.ResourceNotFoundException;
+import com.kawz.tattoo.domain.exception.SessaoInvalidaException;
 import com.kawz.tattoo.domain.projeto.Projeto;
 import com.kawz.tattoo.domain.projeto.ProjetoRepository;
 import org.springframework.data.domain.Page;
@@ -29,28 +30,26 @@ public class SessaoService {
     private final ProjetoRepository projetos;
     private final ClienteRepository clientes;
     private final AgendaGateway agenda;
+    private final AgendaSyncPendenteRepository pendencias;
 
     public SessaoService(SessaoRepository sessoes, ProjetoRepository projetos,
-                         ClienteRepository clientes, AgendaGateway agenda) {
+                         ClienteRepository clientes, AgendaGateway agenda, AgendaSyncPendenteRepository pendencias) {
         this.sessoes = sessoes;
         this.projetos = projetos;
         this.clientes = clientes;
         this.agenda = agenda;
+        this.pendencias = pendencias;
     }
 
     @Transactional(readOnly = true)
     public Page<SessaoResponse> listar(Integer tatuadorId, Pageable pageable) {
-        // Page.map simplifica a conversão de cada Sessao para SessaoResponse
-        // sem perder os metadados de paginação devolvidos pelo repository.
-        return sessoes.findByProjeto_Tatuador_Id(tatuadorId, pageable).map(SessaoMapper::toResponse);
+       return sessoes.findByProjeto_Tatuador_Id(tatuadorId, pageable).map(SessaoMapper::toResponse);
     }
 
     @Transactional(readOnly = true)
     public Page<SessaoResponse> listarPorProjeto(Integer projetoId, Integer tatuadorId, Pageable pageable) {
         obterProjetoDoTatuador(projetoId, tatuadorId);
-        // Page.map substitui cada entidade pelo DTO correspondente e mantém
-        // as informações da página original, como totalElements e totalPages.
-        return sessoes.findByProjetoIdAndProjeto_Tatuador_IdOrderByDataHorarioAsc(projetoId, tatuadorId, pageable)
+         return sessoes.findByProjetoIdAndProjeto_Tatuador_IdOrderByDataHorarioAsc(projetoId, tatuadorId, pageable)
                 .map(SessaoMapper::toResponse);
     }
 
@@ -59,8 +58,6 @@ public class SessaoService {
         if (!clientes.existsByIdAndTatuadorId(clienteId, tatuadorId)) {
             throw new ResourceNotFoundException("Cliente", clienteId);
         }
-        // Page.map concentra a conversão item a item da página sem alterar
-        // o contrato paginado entregue ao controller e ao frontend.
         return sessoes.findByProjeto_Cliente_IdAndProjeto_Tatuador_IdOrderByDataHorarioAsc(
                         clienteId, tatuadorId, pageable)
                 .map(SessaoMapper::toResponse);
@@ -68,9 +65,7 @@ public class SessaoService {
 
     @Transactional(readOnly = true)
     public Page<SessaoResponse> listarPorDataApos(LocalDateTime dataHorario, Integer tatuadorId, Pageable pageable) {
-        // Page.map evita uma conversão manual com PageImpl e preserva os
-        // metadados de paginação enquanto aplica o SessaoMapper.
-        return sessoes.findByDataHorarioAfterAndProjeto_Tatuador_IdOrderByDataHorarioAsc(
+         return sessoes.findByDataHorarioAfterAndProjeto_Tatuador_IdOrderByDataHorarioAsc(
                         dataHorario, tatuadorId, pageable)
                 .map(SessaoMapper::toResponse);
     }
@@ -78,8 +73,6 @@ public class SessaoService {
     @Transactional(readOnly = true)
     public Page<SessaoResponse> listarPorPeriodo(LocalDateTime inicio, LocalDateTime fim,
                                                  Integer tatuadorId, Pageable pageable) {
-        // Page.map realiza a transformação entidade -> DTO e conserva
-        // a página original, inclusive a contagem total de registros.
         return sessoes.buscarPorPeriodo(inicio, fim, tatuadorId, pageable).map(SessaoMapper::toResponse);
     }
 
@@ -90,21 +83,24 @@ public class SessaoService {
 
     @Transactional
     public SessaoResponse criar(SessaoInput input, Integer tatuadorId) {
+        validarDuracao(input.duracaoHoras());
         Projeto projeto = obterProjetoDoTatuador(input.projetoId(), tatuadorId);
         Sessao sessao = new Sessao(projeto, input.dataHorario(), input.localAtendimento(),
-                input.statusSessao(), input.observacoesSessao());
+                input.statusSessao(), input.observacoesSessao(), input.duracaoHoras());
         Sessao salva = sessoes.save(sessao);
-        sincronizarAgenda(salva); // se a agenda falhar, a exceção desfaz a sessão (transação)
+        sincronizarOuEnfileirar(salva);
         return SessaoMapper.toResponse(salva);
     }
 
     @Transactional
     public SessaoResponse atualizar(Integer id, SessaoInput input, Integer tatuadorId) {
+        validarDuracao(input.duracaoHoras());
         Sessao sessao = obterDoTatuador(id, tatuadorId);
         sessao.vincularProjeto(obterProjetoDoTatuador(input.projetoId(), tatuadorId));
         sessao.atualizar(input.dataHorario(), input.localAtendimento(),
                 input.statusSessao(), input.observacoesSessao());
-        sincronizarAgenda(sessao);
+        sessao.definirDuracaoHoras(input.duracaoHoras());
+        sincronizarOuEnfileirar(sessao);
         return SessaoMapper.toResponse(sessao);
     }
 
@@ -112,7 +108,7 @@ public class SessaoService {
     public SessaoResponse remarcar(Integer id, LocalDateTime novoHorario, Integer tatuadorId) {
         Sessao sessao = obterDoTatuador(id, tatuadorId);
         sessao.remarcar(novoHorario);
-        sincronizarAgenda(sessao);
+        sincronizarOuEnfileirar(sessao);
         return SessaoMapper.toResponse(sessao);
     }
 
@@ -120,13 +116,14 @@ public class SessaoService {
     public void excluir(Integer id, Integer tatuadorId) {
         Sessao sessao = obterDoTatuador(id, tatuadorId);
         String eventoId = sessao.getEventoCalendarioId();
+        pendencias.deleteBySessaoId(sessao.getId());
         sessoes.delete(sessao);
         sessoes.flush();
         agenda.removerEvento(eventoId);
     }
 
     /** Cria ou atualiza o evento da sessão no calendário. Não faz nada se a integração estiver desligada. */
-    private void sincronizarAgenda(Sessao sessao) {
+    public void sincronizarAgenda(Sessao sessao) {
         if (!agenda.ativo()) return;
         if ("CANCELADA".equalsIgnoreCase(sessao.getStatusSessao())) {
             if (sessao.getEventoCalendarioId() != null) {
@@ -140,10 +137,20 @@ public class SessaoService {
         String descricao = projeto.getDescricao();
         if (sessao.getEventoCalendarioId() == null) {
             sessao.registrarEventoCalendario(agenda.criarEvento(
-                    titulo, descricao, sessao.getLocalAtendimento(), sessao.getDataHorario()));
+                    titulo, descricao, sessao.getLocalAtendimento(), sessao.getDataHorario(), sessao.getDuracaoHoras()));
         } else {
             agenda.atualizarEvento(sessao.getEventoCalendarioId(),
-                    titulo, descricao, sessao.getLocalAtendimento(), sessao.getDataHorario());
+                    titulo, descricao, sessao.getLocalAtendimento(), sessao.getDataHorario(), sessao.getDuracaoHoras());
+        }
+    }
+
+    private void sincronizarOuEnfileirar(Sessao sessao) {
+        try {
+            sincronizarAgenda(sessao);
+        } catch (RuntimeException ex) {
+            if (!pendencias.existsBySessaoId(sessao.getId())) {
+                pendencias.save(new AgendaSyncPendente(sessao, "SINCRONIZAR"));
+            }
         }
     }
 
@@ -155,5 +162,11 @@ public class SessaoService {
     private Projeto obterProjetoDoTatuador(Integer id, Integer tatuadorId) {
         return projetos.findByIdAndTatuadorId(id, tatuadorId)
                 .orElseThrow(() -> new ResourceNotFoundException("Projeto", id));
+    }
+
+    private void validarDuracao(Integer duracaoHoras) {
+        if (duracaoHoras != null && (duracaoHoras < 1 || duracaoHoras > 24)) {
+            throw new SessaoInvalidaException("A duração da sessão deve estar entre 1 e 24 horas.");
+        }
     }
 }

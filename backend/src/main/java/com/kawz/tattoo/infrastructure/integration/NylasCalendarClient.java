@@ -14,6 +14,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.function.Supplier;
 
 /**
  * Agenda das sessões no Nylas (API v3, chamada direta por REST, sem SDK).
@@ -31,12 +32,12 @@ public class NylasCalendarClient {
     private final long duracaoHoras;
 
     public NylasCalendarClient(
-            @Value("${nylas.base-url:https://api.us.nylas.com}") String baseUrl,
-            @Value("${nylas.api-key:}") String apiKey,
-            @Value("${nylas.grant-id:}") String grantId,
-            @Value("${nylas.calendar-id:primary}") String calendarId,
-            @Value("${nylas.fuso:America/Sao_Paulo}") String fuso,
-            @Value("${nylas.duracao-sessao-horas:3}") long duracaoHoras) {
+            @Value("${kawz.integracoes.nylas.base-url:${nylas.base-url:https://api.us.nylas.com}}") String baseUrl,
+            @Value("${kawz.integracoes.nylas.api-key:${nylas.api-key:}}") String apiKey,
+            @Value("${kawz.integracoes.nylas.grant-id:${nylas.grant-id:}}") String grantId,
+            @Value("${kawz.integracoes.nylas.calendar-id:${nylas.calendar-id:primary}}") String calendarId,
+            @Value("${kawz.integracoes.nylas.fuso:${nylas.fuso:America/Sao_Paulo}}") String fuso,
+            @Value("${kawz.integracoes.nylas.duracao-horas:${nylas.duracao-sessao-horas:3}}") long duracaoHoras) {
         var factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(5_000);
         factory.setReadTimeout(15_000);
@@ -52,15 +53,16 @@ public class NylasCalendarClient {
 
     /** Cria o evento e devolve o id dele no Nylas (null se a integração estiver desligada). */
     public String criarEvento(String titulo, String descricao, String local, LocalDateTime inicio) {
+        return criarEvento(titulo, descricao, local, inicio, null);
+    }
+
+    public String criarEvento(String titulo, String descricao, String local, LocalDateTime inicio, Integer duracaoHoras) {
         if (!ativo()) return null;
         try {
-            Map<?, ?> r = http.post()
+            Map<?, ?> r = comRetry(() -> http.post()
                     .uri(u -> u.path("/v3/grants/{grant}/events").queryParam("calendar_id", calendarId).build(grantId))
-                    .header("Authorization", "Bearer " + apiKey)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body(corpo(titulo, descricao, local, inicio))
-                    .retrieve()
-                    .body(Map.class);
+                    .header("Authorization", "Bearer " + apiKey).contentType(MediaType.APPLICATION_JSON)
+                    .body(corpo(titulo, descricao, local, inicio, duracaoHoras)).retrieve().body(Map.class));
             Object data = r == null ? null : r.get("data");
             Object id = data instanceof Map<?, ?> m ? m.get("id") : null;
             if (id == null) throw new IntegracaoException("O Nylas não devolveu o id do evento");
@@ -71,16 +73,20 @@ public class NylasCalendarClient {
     }
 
     public void atualizarEvento(String eventoId, String titulo, String descricao, String local, LocalDateTime inicio) {
+        atualizarEvento(eventoId, titulo, descricao, local, inicio, null);
+    }
+
+    public void atualizarEvento(String eventoId, String titulo, String descricao, String local, LocalDateTime inicio, Integer duracaoHoras) {
         if (!ativo() || eventoId == null) return;
         try {
-            http.put()
+            comRetry(() -> http.put()
                     .uri(u -> u.path("/v3/grants/{grant}/events/{id}").queryParam("calendar_id", calendarId)
                             .build(grantId, eventoId))
                     .header("Authorization", "Bearer " + apiKey)
                     .contentType(MediaType.APPLICATION_JSON)
-                    .body(corpo(titulo, descricao, local, inicio))
+                    .body(corpo(titulo, descricao, local, inicio, duracaoHoras))
                     .retrieve()
-                    .toBodilessEntity();
+                    .toBodilessEntity());
         } catch (RestClientException ex) {
             throw new IntegracaoException("Falha ao atualizar o evento no Nylas", ex);
         }
@@ -101,11 +107,12 @@ public class NylasCalendarClient {
         }
     }
 
-    private Map<String, Object> corpo(String titulo, String descricao, String local, LocalDateTime inicio) {
+    private Map<String, Object> corpo(String titulo, String descricao, String local, LocalDateTime inicio, Integer duracaoEspecifica) {
         long ini = inicio.atZone(fuso).toEpochSecond();
         Map<String, Object> when = new LinkedHashMap<>();
         when.put("start_time", ini);
-        when.put("end_time", ini + duracaoHoras * 3600);
+        long horas = duracaoEspecifica == null ? duracaoHoras : duracaoEspecifica;
+        when.put("end_time", ini + horas * 3600);
         when.put("start_timezone", fuso.getId());
         when.put("end_timezone", fuso.getId());
         Map<String, Object> corpo = new LinkedHashMap<>();
@@ -114,5 +121,20 @@ public class NylasCalendarClient {
         if (local != null) corpo.put("location", local);
         corpo.put("when", when);
         return corpo;
+    }
+
+    private <T> T comRetry(Supplier<T> operacao) {
+        RestClientException ultima = null;
+        for (int tentativa = 0; tentativa < 3; tentativa++) {
+            try { return operacao.get(); }
+            catch (RestClientException ex) {
+                ultima = ex;
+                if (tentativa < 2) {
+                    try { Thread.sleep(200L * (1L << tentativa)); }
+                    catch (InterruptedException interrupted) { Thread.currentThread().interrupt(); throw ex; }
+                }
+            }
+        }
+        throw ultima;
     }
 }

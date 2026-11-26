@@ -24,7 +24,6 @@ DELETE FROM projeto WHERE id BETWEEN 7501 AND 7599;
 DELETE FROM anamnese WHERE id BETWEEN 7251 AND 7299;
 DELETE FROM cliente WHERE id BETWEEN 7201 AND 7249;
 DELETE FROM caracteristicas_projeto WHERE id BETWEEN 7401 AND 7449;
-DELETE FROM contrato WHERE id BETWEEN 7301 AND 7349;
 DELETE FROM preferencias_cliente WHERE id BETWEEN 7101 AND 7149;
 DELETE FROM tatuador WHERE id = 7001 OR LOWER(email) = 'demo@kawz.local';
 
@@ -63,24 +62,12 @@ INSERT INTO cliente (
     (7203, 7001, 'Sofia Nunes (FICTICIO)', '(11) 90000-1005', '000.000.000-05', '@sofia.mock', 'Instagram', 'https://wa.me/550000000005', 'https://drive.local/mock/sofia', 'Sao Paulo/SP', 'Grande', 'Dragao oriental costas', 'CLIENTE', TIMESTAMP '2026-08-15 15:45:00', 7103),
     (7204, 7001, 'Laura Menezes (FICTICIO)', '(11) 90000-1001', '000.000.000-01', '@laura.mock', 'WhatsApp', 'https://wa.me/550000000001', 'https://drive.local/mock/laura', 'Sao Paulo/SP', 'Medio', 'Floral no antebraco', 'Interessado', TIMESTAMP '2026-10-10 14:20:00', 7104);
 
-INSERT INTO anamnese (id, cliente_id, dados_saude, preparacao_tatuagem) VALUES
-    (7251, 7201, 'Sem restricoes', 'Hidratar 48h antes'),
-    (7252, 7202, 'Pele sensivel', 'Evitar cafeina no dia'),
-    (7253, 7203, 'Sem alergias', 'Dormir bem na vespera'),
-    (7254, 7203, 'Sensibilidade leve', 'Reforcar hidratacao'),
-    (7255, 7204, 'Sem restricoes', 'Levar refeicao leve');
-
--- ---------------------------
--- Contratos + caracteristicas
--- ---------------------------
-INSERT INTO contrato (
-    id, limite_alteracoes_arte, tolerancia_atraso, uso_imagem,
-    data_assinatura, status_contrato, criado_em, pdf_url, transaction_ref
-) VALUES
-    (7301, '2 alteracoes', '15 minutos', 'Autorizado', NULL, 'GERADO', TIMESTAMP '2026-10-03 10:10:00', 'https://files.local/mock/contrato-7301.pdf', 'txn-dev-7301'),
-    (7302, '1 alteracao', '10 minutos', 'Somente com autorizacao', NULL, 'RASCUNHO', TIMESTAMP '2026-10-08 09:00:00', NULL, NULL),
-    (7303, '3 alteracoes', '20 minutos', 'Autorizado', DATE '2026-07-20', 'ASSINADO', TIMESTAMP '2026-07-10 18:00:00', 'https://files.local/mock/contrato-7303.pdf', 'txn-dev-7303'),
-    (7304, '2 alteracoes', '15 minutos', 'Negociavel', NULL, 'GERADO', TIMESTAMP '2026-10-11 11:35:00', 'https://files.local/mock/contrato-7304.pdf', 'txn-dev-7304');
+INSERT INTO anamnese (id, cliente_id, nome, telefone, cpf, dados_saude, preparacao_tatuagem, saude_json, procedimento_json) VALUES
+    (7251, 7201, 'Caio Freitas (FICTICIO)', '(11) 90000-1002', '000.000.000-02', 'Sem restricoes', 'Hidratar 48h antes', '{"alergia":false}', '{"observacoes":"Blackwork"}'),
+    (7252, 7202, 'Marina Alves (FICTICIO)', '(11) 90000-1003', '000.000.000-03', 'Pele sensivel', 'Evitar cafeina no dia', '{"alergia":true}', '{"observacoes":"Minimalista"}'),
+    (7253, 7203, 'Sofia Nunes (FICTICIO)', '(11) 90000-1005', '000.000.000-05', 'Sem alergias', 'Dormir bem na vespera', '{"alergia":false}', '{"observacoes":"Oriental"}'),
+    (7254, 7203, 'Sofia Nunes (FICTICIO)', '(11) 90000-1005', '000.000.000-05', 'Sensibilidade leve', 'Reforcar hidratacao', '{"alergia":true}', '{"observacoes":"Sessao complementar"}'),
+    (7255, 7204, 'Laura Menezes (FICTICIO)', '(11) 90000-1001', '000.000.000-01', 'Sem restricoes', 'Levar refeicao leve', '{"alergia":false}', '{"observacoes":"Floral"}');
 
 INSERT INTO caracteristicas_projeto (
     id, ideia_expectativa, estilo_arte, localizacao_corpo,
@@ -98,12 +85,12 @@ INSERT INTO projeto (
     id, tatuador_id, cliente_id, nome, descricao, link_pasta,
     status_projeto, valor_total, valor_sinal, quantidade_sessoes,
     data_validade, lembrete_pre, lembrete_post,
-    contrato_id, caracteristicas_projeto_id
+    caracteristicas_projeto_id
 ) VALUES
-    (7501, 7001, 7201, 'Blackout Braco Esquerdo (FICTICIO)', 'Projeto ficticio blackwork em andamento', 'https://drive.local/mock/projeto-7501', 'EM_ANDAMENTO', 4200.00, 1200.00, 5, DATE '2026-12-20', 'Hidratar 7 dias antes', 'Nao expor ao sol por 30 dias', 7301, 7401),
-    (7502, 7001, 7202, 'Minimalista Tornozelo (FICTICIO)', 'Projeto ficticio minimalista em orcamento', 'https://drive.local/mock/projeto-7502', 'ORCAMENTO', 1800.00, 500.00, 2, DATE '2026-11-15', 'Evitar alcool 24h antes', 'Pomada cicatrizante por 7 dias', 7302, 7402),
-    (7503, 7001, 7203, 'Dragao Costas (FICTICIO)', 'Projeto ficticio concluido para historico', 'https://drive.local/mock/projeto-7503', 'CONCLUIDO', 5600.00, 1600.00, 4, DATE '2026-09-30', 'Reforcar alimentacao', 'Acompanhar cicatrizacao por 30 dias', 7303, 7403),
-    (7504, 7001, 7204, 'Floral Antebraco (FICTICIO)', 'Projeto ficticio em fase de planejamento', 'https://drive.local/mock/projeto-7504', 'PLANEJAMENTO', 2600.00, 800.00, 3, DATE '2026-12-05', 'Dormir bem na vespera', 'Lavar 3x ao dia', 7304, 7404);
+    (7501, 7001, 7201, 'Blackout Braco Esquerdo (FICTICIO)', 'Projeto ficticio blackwork em andamento', 'https://drive.local/mock/projeto-7501', 'EM_ANDAMENTO', 4200.00, 1200.00, 5, DATE '2026-12-20', 'Hidratar 7 dias antes', 'Nao expor ao sol por 30 dias', 7401),
+    (7502, 7001, 7202, 'Minimalista Tornozelo (FICTICIO)', 'Projeto ficticio minimalista em orcamento', 'https://drive.local/mock/projeto-7502', 'ORCAMENTO', 1800.00, 500.00, 2, DATE '2026-11-15', 'Evitar alcool 24h antes', 'Pomada cicatrizante por 7 dias', 7402),
+    (7503, 7001, 7203, 'Dragao Costas (FICTICIO)', 'Projeto ficticio concluido para historico', 'https://drive.local/mock/projeto-7503', 'CONCLUIDO', 5600.00, 1600.00, 4, DATE '2026-09-30', 'Reforcar alimentacao', 'Acompanhar cicatrizacao por 30 dias', 7403),
+    (7504, 7001, 7204, 'Floral Antebraco (FICTICIO)', 'Projeto ficticio em fase de planejamento', 'https://drive.local/mock/projeto-7504', 'PLANEJAMENTO', 2600.00, 800.00, 3, DATE '2026-12-05', 'Dormir bem na vespera', 'Lavar 3x ao dia', 7404);
 
 -- ---------------------------
 -- Agenda de sessoes
@@ -188,7 +175,6 @@ ALTER TABLE tatuador ALTER COLUMN id RESTART WITH 8000;
 ALTER TABLE preferencias_cliente ALTER COLUMN id RESTART WITH 8000;
 ALTER TABLE cliente ALTER COLUMN id RESTART WITH 8000;
 ALTER TABLE anamnese ALTER COLUMN id RESTART WITH 8000;
-ALTER TABLE contrato ALTER COLUMN id RESTART WITH 8000;
 ALTER TABLE caracteristicas_projeto ALTER COLUMN id RESTART WITH 8000;
 ALTER TABLE projeto ALTER COLUMN id RESTART WITH 8000;
 ALTER TABLE sessao ALTER COLUMN id RESTART WITH 8000;

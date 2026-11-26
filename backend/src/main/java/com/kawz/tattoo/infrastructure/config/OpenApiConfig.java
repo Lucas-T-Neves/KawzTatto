@@ -19,7 +19,7 @@ public class OpenApiConfig {
                         .title("Kawz Tattoo API")
                         .description("""
                                 Gestão de tatuadores, clientes, projetos, sessões, movimentações \
-                                financeiras e contratos do estúdio (Sprint 2+).
+                                financeiras do estúdio (Sprint 2+).
 
                                 Autentique-se em `POST /api/v1/tatuadores/autenticacao` e use o \
                                 token em "Authorize" (Bearer) nas demais rotas. Erros seguem \

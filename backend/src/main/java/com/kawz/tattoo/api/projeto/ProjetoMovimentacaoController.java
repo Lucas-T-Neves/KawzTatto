@@ -4,7 +4,7 @@ import com.kawz.tattoo.api.movimentacao.dto.MovimentacaoResponse;
 import com.kawz.tattoo.api.web.Paginacao;
 import com.kawz.tattoo.application.security.TatuadorAutenticado;
 import com.kawz.tattoo.domain.movimentacao.MovimentacaoService;
-import org.springframework.data.domain.Page;
+import com.kawz.tattoo.api.web.PaginaResponse;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -21,10 +21,10 @@ public class ProjetoMovimentacaoController {
     }
 
     @GetMapping
-    public Page<MovimentacaoResponse> listar(@PathVariable Integer projetoId,
+    public PaginaResponse<MovimentacaoResponse> listar(@PathVariable Integer projetoId,
                                              @RequestParam(defaultValue = "0") int pagina,
                                              @RequestParam(defaultValue = "20") int tamanho) {
-        return service.listarPorProjeto(projetoId, tatuadorAutenticado.id(), Paginacao.de(pagina, tamanho));
+        return PaginaResponse.de(service.listarPorProjeto(projetoId, tatuadorAutenticado.id(), Paginacao.de(pagina, tamanho)));
     }
 
     @GetMapping("/{id}")

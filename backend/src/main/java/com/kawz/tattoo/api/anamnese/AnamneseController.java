@@ -6,7 +6,9 @@ import com.kawz.tattoo.application.security.TatuadorAutenticado;
 import com.kawz.tattoo.domain.anamnese.AnamneseService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -37,9 +39,21 @@ public class AnamneseController {
         return service.criar(input, tatuadorAutenticado.id());
     }
 
-    @PutMapping("/api/v1/anamneses/{id}")
-    public AnamneseResponse atualizar(@PathVariable Integer id, @Valid @RequestBody AnamneseInput input) {
-        return service.atualizar(id, input, tatuadorAutenticado.id());
+    @PostMapping("/api/v1/anamneses/{id}/pdf")
+    public AnamneseResponse gerarPdf(@PathVariable Integer id) {
+        return service.gerarPdf(id, tatuadorAutenticado.id());
+    }
+
+    @PostMapping(path = "/api/v1/anamneses/{id}/documento-assinado", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public AnamneseResponse enviarDocumentoAssinado(@PathVariable Integer id,
+                                                     @RequestParam("arquivo") MultipartFile arquivo) {
+        return service.enviarDocumentoAssinado(id, arquivo, tatuadorAutenticado.id());
+    }
+
+    @DeleteMapping("/api/v1/anamneses/{id}/documento-assinado")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void excluirDocumentoAssinado(@PathVariable Integer id) {
+        service.excluirDocumentoAssinado(id, tatuadorAutenticado.id());
     }
 
     @DeleteMapping("/api/v1/anamneses/{id}")
@@ -47,4 +61,5 @@ public class AnamneseController {
     public void excluir(@PathVariable Integer id) {
         service.excluir(id, tatuadorAutenticado.id());
     }
+
 }

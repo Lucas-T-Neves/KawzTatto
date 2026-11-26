@@ -30,8 +30,18 @@ public class NylasAgendaGateway implements AgendaGateway {
     }
 
     @Override
+    public String criarEvento(String titulo, String descricao, String local, LocalDateTime inicio, Integer duracaoHoras) {
+        return nylas.criarEvento(titulo, descricao, local, inicio, duracaoHoras);
+    }
+
+    @Override
     public void atualizarEvento(String eventoId, String titulo, String descricao, String local, LocalDateTime inicio) {
         nylas.atualizarEvento(eventoId, titulo, descricao, local, inicio);
+    }
+
+    @Override
+    public void atualizarEvento(String eventoId, String titulo, String descricao, String local, LocalDateTime inicio, Integer duracaoHoras) {
+        nylas.atualizarEvento(eventoId, titulo, descricao, local, inicio, duracaoHoras);
     }
 
     @Override

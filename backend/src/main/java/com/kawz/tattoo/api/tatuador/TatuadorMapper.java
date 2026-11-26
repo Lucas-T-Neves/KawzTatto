@@ -8,6 +8,6 @@ public final class TatuadorMapper {
     private TatuadorMapper() {}
 
     public static TatuadorResponse toResponse(Tatuador value) {
-        return new TatuadorResponse(value.getId(), value.getNome(), value.getEmail());
+        return new TatuadorResponse(value.getId(), value.getNome(), value.getEmail(), value.getLogoUrl(), value.getLogoPublicId());
     }
 }

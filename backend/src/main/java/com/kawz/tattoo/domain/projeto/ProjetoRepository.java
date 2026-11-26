@@ -18,18 +18,8 @@ public interface ProjetoRepository extends JpaRepository<Projeto, Integer> {
     List<Projeto> findByClienteIdAndTatuadorIdOrderByIdDesc(Integer clienteId, Integer tatuadorId);
 
     List<Projeto> findByTatuadorIdOrderByIdDesc(Integer tatuadorId);
-
-    /** Contrato é mapeado pelo projeto (projeto.contrato_id): a posse vem do projeto. */
-    Optional<Projeto> findByContratoIdAndTatuadorId(Integer contratoId, Integer tatuadorId);
-
-    /**
-     * Projeto com contrato e características carregados na mesma consulta.
-     * Usado pelo caso de uso de projeto detalhado, que devolve o resultado para
-     * a camada de API montar a resposta fora da transação.
-     */
     @Query("""
             SELECT p FROM Projeto p
-            JOIN FETCH p.contrato
             JOIN FETCH p.caracteristicas
             WHERE p.id = :id AND p.tatuador.id = :tatuadorId
             """)

@@ -73,6 +73,13 @@ class NylasCalendarClientTest {
     }
 
     @Test
+    void usaDuracaoEspecificaQuandoInformada() {
+        ativo().criarEvento("Sessão", null, null, INICIO, 5);
+        long inicio = INICIO.atZone(ZoneId.of("America/Sao_Paulo")).toEpochSecond();
+        assertThat(server.ultima().body()).contains("\"end_time\":" + (inicio + 5 * 3600));
+    }
+
+    @Test
     void removeEvento() {
         ativo().removerEvento("evt-123");
 

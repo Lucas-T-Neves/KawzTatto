@@ -22,7 +22,7 @@ public final class ProjetoMapper {
                 referencia == null ? null : referencia.getId(),
                 referencia == null ? null : nomeImagem(referencia),
                 referencia == null ? null : referencia.getUrl(),
-                value.getContrato().getId(), caracteristicas.getId());
+                caracteristicas.getId());
     }
 
     private static String nomeImagem(Imagem imagem) {

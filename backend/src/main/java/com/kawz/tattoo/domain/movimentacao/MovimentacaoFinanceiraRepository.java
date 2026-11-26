@@ -52,7 +52,7 @@ public interface MovimentacaoFinanceiraRepository extends JpaRepository<Moviment
             """)
     BigDecimal somarRecebido(@Param("projetoId") Integer projetoId);
 
-    /** Existe movimentação de sinal paga? Mesma regra da view vw_contratos (sinal_pago). */
+    /** Existe movimentação de sinal paga? Mesma regra do cálculo de sinal pago. */
     boolean existsByProjetoIdAndCategoriaIgnoreCaseAndStatusPagamentoIgnoreCase(
             Integer projetoId, String categoria, String statusPagamento);
 

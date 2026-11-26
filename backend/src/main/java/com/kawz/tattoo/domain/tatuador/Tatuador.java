@@ -19,6 +19,10 @@ public class Tatuador extends BaseEntity {
 
     @Column(nullable = false, length = 255)
     private String senha;
+    @Column(name = "logo_url", length = 1000)
+    private String logoUrl;
+    @Column(name = "logo_public_id", length = 255)
+    private String logoPublicId;
 
     protected Tatuador() {}
 
@@ -41,6 +45,14 @@ public class Tatuador extends BaseEntity {
         this.senha = senhaCodificada;
     }
 
+    /** Estrutura preparada para logo global; nenhum logo é escolhido por padrão. */
+    public void registrarLogo(String url, String publicId) {
+        this.logoUrl = url;
+        this.logoPublicId = publicId;
+    }
+
     public String getNome() { return nome; }
     public String getEmail() { return email; }
+    public String getLogoUrl() { return logoUrl; }
+    public String getLogoPublicId() { return logoPublicId; }
 }

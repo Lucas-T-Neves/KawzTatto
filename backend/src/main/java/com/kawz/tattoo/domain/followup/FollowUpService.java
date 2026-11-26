@@ -33,18 +33,14 @@ public class FollowUpService {
     @Transactional(readOnly = true)
     public List<FollowUpResponse> listarPorCliente(Integer clienteId, Integer tatuadorId) {
         obterClienteDoTatuador(clienteId, tatuadorId);
-        // stream().map().toList() substitui a conversão manual de cada FollowUp
-        // pelo mapper e devolve uma lista contendo somente os DTOs.
-        return followUps.findByClienteIdAndCliente_Tatuador_IdOrderByDataPrevistaAsc(clienteId, tatuadorId).stream()
+         return followUps.findByClienteIdAndCliente_Tatuador_IdOrderByDataPrevistaAsc(clienteId, tatuadorId).stream()
                 .map(FollowUpMapper::toResponse)
                 .toList();
     }
 
     @Transactional(readOnly = true)
     public List<FollowUpResponse> listarPorTatuador(Integer tatuadorId) {
-        // stream().map().toList() percorre os FollowUps encontrados, aplica
-        // o mapper explícito e reúne os FollowUpResponse em uma lista.
-        return followUps.findByCliente_Tatuador_Id(tatuadorId).stream()
+         return followUps.findByCliente_Tatuador_Id(tatuadorId).stream()
                 .map(FollowUpMapper::toResponse)
                 .toList();
     }
@@ -78,17 +74,13 @@ public class FollowUpService {
                     .filter(f -> f.getDataPrevista() != null && !f.getDataPrevista().isAfter(dataAte))
                     .toList();
         }
-        // stream().map().toList() resume a conversão item a item da lista filtrada
-        // e produz a lista de respostas que será enviada pela API.
-        return encontrados.stream().map(FollowUpMapper::toResponse).toList();
+         return encontrados.stream().map(FollowUpMapper::toResponse).toList();
     }
 
     @Transactional(readOnly = true)
     public List<FollowUpResponse> listarPorProjeto(Integer projetoId, Integer tatuadorId) {
         obterProjetoDoTatuador(projetoId, tatuadorId);
-        // stream().map().toList() converte cada FollowUp do projeto para DTO
-        // sem modificar a lista original retornada pelo repository.
-        return followUps.findByProjetoIdDoTatuador(projetoId, tatuadorId).stream()
+         return followUps.findByProjetoIdDoTatuador(projetoId, tatuadorId).stream()
                 .map(FollowUpMapper::toResponse).toList();
     }
 

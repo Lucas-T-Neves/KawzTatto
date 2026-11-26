@@ -44,7 +44,7 @@ class EndpointsApiTest {
     static {
         try {
             apiTemplate = new FakeServer(req -> new Resp(200,
-                    "{\"status\":\"success\",\"download_url\":\"https://pdf.exemplo/contrato.pdf\","
+                    "{\"status\":\"success\",\"download_url\":\"https://pdf.exemplo/anamnese.pdf\","
                             + "\"transaction_ref\":\"tx-42\"}"));
             nylas = new FakeServer(req -> new Resp(200, "{\"request_id\":\"1\",\"data\":{\"id\":\"evt-1\"}}"));
         } catch (IOException ex) {
@@ -58,7 +58,7 @@ class EndpointsApiTest {
         r.add("spring.datasource.url", () -> "jdbc:h2:mem:kawz-endpoints;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1");
         r.add("apitemplate.base-url", apiTemplate::url);
         r.add("apitemplate.api-key", () -> "chave-apitemplate");
-        r.add("apitemplate.template-contrato-id", () -> "tpl-1");
+        r.add("apitemplate.template-anamnese-id", () -> "tpl-1");
         r.add("nylas.base-url", nylas::url);
         r.add("nylas.api-key", () -> "chave-nylas");
         r.add("nylas.grant-id", () -> "grant-1");
@@ -88,7 +88,7 @@ class EndpointsApiTest {
         t = auth.token();
         apiTemplate.limpar();
         apiTemplate.responder(req -> new Resp(200,
-                "{\"status\":\"success\",\"download_url\":\"https://pdf.exemplo/contrato.pdf\","
+                "{\"status\":\"success\",\"download_url\":\"https://pdf.exemplo/anamnese.pdf\","
                         + "\"transaction_ref\":\"tx-42\"}"));
         nylas.limpar();
         nylas.responder(req -> new Resp(200, "{\"request_id\":\"1\",\"data\":{\"id\":\"evt-1\"}}"));
@@ -232,8 +232,12 @@ class EndpointsApiTest {
         assertThat(anamneses.status()).isEqualTo(200);
         int qtdAnamneses = anamneses.json("$.length()");
         assertThat(qtdAnamneses).isGreaterThanOrEqualTo(1);
+        R anamnesePdf = api.post("/api/v1/anamneses/" + anamneseId + "/pdf", null, t);
+        assertThat(anamnesePdf.status()).isEqualTo(200);
+        assertThat((String) anamnesePdf.json("$.pdfUrl")).isEqualTo("https://pdf.exemplo/anamnese.pdf");
+        assertThat((String) anamnesePdf.json("$.transactionRef")).isEqualTo("tx-42");
         assertThat(api.put("/api/v1/anamneses/" + anamneseId,
-                "{\"clienteId\":" + id + ",\"dadosSaude\":\"Asma\"}", t).status()).isEqualTo(200);
+                "{\"clienteId\":" + id + ",\"dadosSaude\":\"Asma\"}", t).status()).isEqualTo(405);
         assertThat(api.delete("/api/v1/anamneses/" + anamneseId, t).status()).isEqualTo(204);
         assertThat(api.get("/api/v1/anamneses/" + anamneseId, t).status()).isEqualTo(404);
 
@@ -299,7 +303,6 @@ class EndpointsApiTest {
         assertThat(estilo).isEqualTo("Blackwork");
 
         // escopos
-        assertThat(api.get("/api/v1/projetos/" + id + "/contrato", t).status()).isEqualTo(200);
         assertThat(api.get("/api/v1/projetos/" + id + "/sessoes", t).status()).isEqualTo(200);
         assertThat(api.get("/api/v1/projetos/" + id + "/follow-ups", t).status()).isEqualTo(200);
         assertThat(api.get("/api/v1/projetos/" + id + "/movimentacoes", t).status()).isEqualTo(200);
@@ -444,17 +447,17 @@ class EndpointsApiTest {
     }
 
     @Test
-    void falhaNoNylasDesfazACriacaoDaSessaoERetorna502() {
+    void falhaNoNylasMantemSessaoEDeixaSincronizacaoNaOutbox() {
         int projetoId = api.criarProjeto(t, auth.tatuadorId(), api.criarCliente(t, "Diego"));
         nylas.responder(req -> new Resp(500, "{}"));
 
         R r = api.post("/api/v1/sessoes", "{\"projetoId\":" + projetoId + ",\"dataHorario\":\"2030-03-01T09:00:00\","
                 + "\"localAtendimento\":\"Estudio\",\"statusSessao\":\"AGENDADA\"}", t);
 
-        assertThat(r.status()).isEqualTo(502);
+        assertThat(r.status()).isEqualTo(201);
         R sessoes = api.get("/api/v1/sessoes?projetoId=" + projetoId, t);
         int total = sessoes.json("$.totalElements");
-        assertThat(total).isZero();
+        assertThat(total).isEqualTo(1);
     }
 
     // ------------------------------------------------------------------ movimentações, dashboard
@@ -592,111 +595,4 @@ class EndpointsApiTest {
         assertThat(qtd).isZero();
     }
 
-    // ------------------------------------------------------------------ contratos + APITemplate
-
-    @Test
-    void contratosEGeracaoDePdfNoApiTemplate() {
-        int clienteId = api.criarCliente(t, "Helena");
-        int projetoId = api.criarProjeto(t, auth.tatuadorId(), clienteId);
-        api.post("/api/v1/movimentacoes", "{\"projetoId\":" + projetoId + ",\"naturezaTransacao\":\"ENTRADA\","
-                + "\"categoria\":\"sinal\",\"dataOcorrencia\":\"" + LocalDate.now() + "\",\"valorMonetario\":500.00,"
-                + "\"formaPagamento\":\"PIX\",\"statusPagamento\":\"pago\"}", t);
-        R doProjeto = api.get("/api/v1/projetos/" + projetoId + "/contrato", t);
-        assertThat(doProjeto.status()).isEqualTo(200);
-        int contratoId = doProjeto.json("$.id");
-
-        // preencher termos (criar), editar, assinar
-        R criado = api.post("/api/v1/contratos", "{\"projetoId\":" + projetoId + ",\"limiteAlteracoesArte\":\"2\","
-                + "\"toleranciaAtraso\":\"15 min\",\"usoImagem\":\"autorizado\"}", t);
-        assertThat(criado.status()).isEqualTo(201);
-        assertThat(api.put("/api/v1/contratos/" + contratoId,
-                "{\"limiteAlteracoesArte\":\"3\",\"toleranciaAtraso\":\"20 min\",\"usoImagem\":\"autorizado\"}", t).status())
-                .isEqualTo(200);
-        R assinado = api.patch("/api/v1/contratos/" + contratoId + "/assinatura", "{\"data\":\"2030-01-10\"}", t);
-        assertThat(assinado.status()).isEqualTo(200);
-        String dataAssinatura = assinado.json("$.dataAssinatura");
-        assertThat(dataAssinatura).isEqualTo("2030-01-10");
-        assertThat(api.patch("/api/v1/contratos/" + contratoId + "/assinatura", null, t).status()).isEqualTo(200);
-
-        // view vw_contratos
-        R view = api.get("/api/v1/contratos/" + contratoId, t);
-        assertThat(view.status()).isEqualTo(200);
-        String cpfNaView = view.json("$.cpfCliente");
-        assertThat(cpfNaView).isEqualTo("123.456.789-00");
-        String statusNaView = view.json("$.statusContrato");
-        assertThat(statusNaView).isEqualTo("ASSINADO");
-        String nomeCliente = view.json("$.nomeCliente");
-        boolean sinalPago = view.json("$.sinalPago");
-        assertThat(nomeCliente).isEqualTo("Helena");
-        assertThat(sinalPago).isTrue();
-        R lista = api.get("/api/v1/contratos?pagina=0&tamanho=10", t);
-        assertThat(lista.status()).isEqualTo(200);
-        assertThat(api.get("/api/v1/contratos/9999999", t).status()).isEqualTo(404);
-
-        // gerar PDF -> APITemplate
-        R pdf = api.post("/api/v1/contratos/" + contratoId + "/pdf", "{\"tamanhoEstimado\":\"20cm\"}", t);
-        assertThat(pdf.status()).isEqualTo(200);
-        String pdfUrl = pdf.json("$.pdfUrl");
-        String ref = pdf.json("$.transactionRef");
-        assertThat(pdfUrl).isEqualTo("https://pdf.exemplo/contrato.pdf");
-        assertThat(ref).isEqualTo("tx-42");
-        var enviado = apiTemplate.ultima();
-        assertThat(enviado.method()).isEqualTo("POST");
-        assertThat(enviado.uri()).startsWith("/v2/create-pdf").contains("template_id=tpl-1");
-        assertThat(enviado.headers().get("x-api-key")).isEqualTo("chave-apitemplate");
-        assertThat(enviado.body())
-                .contains("\"nome_cliente\":\"Helena\"")
-                .contains("123.456.789-00") // CPF vem do cadastro do cliente
-                .contains("20cm")
-                .contains("\"sinal_pago\":\"Sim\"")
-                .contains("\"forma_pagamento\":\"PIX\"")
-                .contains("nome_artista");
-
-        // persistiu no contrato
-        R depois = api.get("/api/v1/projetos/" + projetoId + "/contrato", t);
-        String pdfSalvo = depois.json("$.pdfUrl");
-        assertThat(pdfSalvo).isEqualTo("https://pdf.exemplo/contrato.pdf");
-
-        // corpo é opcional
-        assertThat(api.post("/api/v1/contratos/" + contratoId + "/pdf", null, t).status()).isEqualTo(200);
-        assertThat(api.post("/api/v1/contratos/9999999/pdf", null, t).status()).isEqualTo(404);
-    }
-
-    @Test
-    void statusDoContratoAcompanhaOFluxo() {
-        int projetoId = api.criarProjeto(t, auth.tatuadorId(), api.criarCliente(t, "Otavio"));
-        R novo = api.get("/api/v1/projetos/" + projetoId + "/contrato", t);
-        int contratoId = novo.json("$.id");
-        String inicial = novo.json("$.statusContrato");
-        String criadoEm = novo.json("$.criadoEm");
-        assertThat(inicial).isEqualTo("RASCUNHO");
-        assertThat(criadoEm).isNotBlank();
-
-        R gerado = api.post("/api/v1/contratos/" + contratoId + "/pdf", null, t);
-        String aposPdf = gerado.json("$.statusContrato");
-        assertThat(aposPdf).isEqualTo("GERADO");
-
-        R assinado = api.patch("/api/v1/contratos/" + contratoId + "/assinatura", null, t);
-        String aposAssinar = assinado.json("$.statusContrato");
-        assertThat(aposAssinar).isEqualTo("ASSINADO");
-
-        // gerar o PDF de novo depois de assinado não volta o status
-        R denovo = api.post("/api/v1/contratos/" + contratoId + "/pdf", null, t);
-        String final_ = denovo.json("$.statusContrato");
-        assertThat(final_).isEqualTo("ASSINADO");
-    }
-
-    @Test
-    void falhaNoApiTemplateRetorna502ENaoGravaPdf() {
-        int projetoId = api.criarProjeto(t, auth.tatuadorId(), api.criarCliente(t, "Igor"));
-        R contrato = api.get("/api/v1/projetos/" + projetoId + "/contrato", t);
-        int contratoId = contrato.json("$.id");
-        apiTemplate.responder(req -> new Resp(500, "{\"status\":\"error\"}"));
-
-        R r = api.post("/api/v1/contratos/" + contratoId + "/pdf", null, t);
-
-        assertThat(r.status()).isEqualTo(502);
-        R depois = api.get("/api/v1/projetos/" + projetoId + "/contrato", t);
-        assertThat(depois.body()).doesNotContain("pdf.exemplo");
-    }
 }

@@ -82,9 +82,7 @@ public class ProjetoService {
     @Transactional(readOnly = true)
     public List<ProjetoResponse> listarPorCliente(Integer clienteId, Integer tatuadorId) {
         obterClienteDoTatuador(clienteId, tatuadorId);
-        // stream().map().toList() percorre a lista, converte cada Projeto
-        // para seu DTO e reúne os resultados em uma nova lista.
-        return projetos.findByClienteIdAndTatuadorIdOrderByIdDesc(clienteId, tatuadorId).stream()
+         return projetos.findByClienteIdAndTatuadorIdOrderByIdDesc(clienteId, tatuadorId).stream()
                 .map(projeto -> {
                     Resumo resumo = resumo(projeto.getId());
                     return ProjetoMapper.toResponse(projeto, resumo.recebido(), resumo.sinalPago(),

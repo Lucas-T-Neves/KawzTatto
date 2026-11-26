@@ -7,7 +7,7 @@ import com.kawz.tattoo.api.web.Paginacao;
 import com.kawz.tattoo.application.security.TatuadorAutenticado;
 import com.kawz.tattoo.domain.movimentacao.MovimentacaoService;
 import jakarta.validation.Valid;
-import org.springframework.data.domain.Page;
+import com.kawz.tattoo.api.web.PaginaResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,15 +24,15 @@ public class MovimentacaoController {
     }
 
     @GetMapping
-    public Page<MovimentacaoResponse> listar(
+    public PaginaResponse<MovimentacaoResponse> listar(
             @RequestParam(required = false) String mes,
             @RequestParam(required = false) String status,
             @RequestParam(required = false) Integer projetoId,
             @RequestParam(required = false) Integer clienteId,
             @RequestParam(defaultValue = "0") int pagina,
             @RequestParam(defaultValue = "20") int tamanho) {
-        return service.listar(tatuadorAutenticado.id(), mes, status, projetoId, clienteId,
-                Paginacao.de(pagina, tamanho));
+        return PaginaResponse.de(service.listar(tatuadorAutenticado.id(), mes, status, projetoId, clienteId,
+                Paginacao.de(pagina, tamanho)));
     }
 
     @GetMapping("/resumo")

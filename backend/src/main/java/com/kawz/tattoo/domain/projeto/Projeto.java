@@ -2,7 +2,6 @@ package com.kawz.tattoo.domain.projeto;
 
 import com.kawz.tattoo.domain.caracteristicasprojeto.CaracteristicasProjeto;
 import com.kawz.tattoo.domain.cliente.Cliente;
-import com.kawz.tattoo.domain.contrato.Contrato;
 import com.kawz.tattoo.domain.shared.BaseEntity;
 import com.kawz.tattoo.domain.tatuador.Tatuador;
 
@@ -49,11 +48,6 @@ public class Projeto extends BaseEntity {
     @Column(name = "lembrete_post", length = 45)
     private String lembretePost;
 
-    // FKs do lado do projeto, conforme o script: contrato_id e
-    // caracteristicas_projeto_id ambos NOT NULL + UNIQUE em projeto
-    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    @JoinColumn(name = "contrato_id", nullable = false, unique = true)
-    private Contrato contrato;
     @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @JoinColumn(name = "caracteristicas_projeto_id", nullable = false, unique = true)
     private CaracteristicasProjeto caracteristicas;
@@ -67,7 +61,6 @@ public class Projeto extends BaseEntity {
         this.cliente = cliente;
         atualizar(nome, descricao, linkPasta, statusProjeto, valorTotal, valorSinal,
                 quantidadeSessoes, dataValidade, lembretePre, lembretePost);
-        this.contrato = new Contrato();
         this.caracteristicas = new CaracteristicasProjeto();
     }
 
@@ -87,11 +80,7 @@ public class Projeto extends BaseEntity {
         this.lembretePost = lembretePost;
     }
 
-    /**
-     * Saldo a receber: valor total menos o que já foi recebido (movimentações
-     * de ENTRADA pagas). Alinhado à regra da view vw_contratos, que marca o
-     * sinal como pago pelas movimentações — não pelo valor_sinal do contrato.
-     */
+    /** Saldo a receber: valor total menos o que já foi recebido. */
     public BigDecimal calcularSaldo(BigDecimal recebido) {
         if (valorTotal == null) return null;
         return valorTotal.subtract(recebido == null ? BigDecimal.ZERO : recebido);
@@ -115,6 +104,5 @@ public class Projeto extends BaseEntity {
     public LocalDate getDataValidade() { return dataValidade; }
     public String getLembretePre() { return lembretePre; }
     public String getLembretePost() { return lembretePost; }
-    public Contrato getContrato() { return contrato; }
     public CaracteristicasProjeto getCaracteristicas() { return caracteristicas; }
 }

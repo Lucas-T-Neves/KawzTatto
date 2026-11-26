@@ -8,7 +8,7 @@ import com.kawz.tattoo.application.security.TatuadorAutenticado;
 import com.kawz.tattoo.domain.exception.BusinessException;
 import com.kawz.tattoo.domain.sessao.SessaoService;
 import jakarta.validation.Valid;
-import org.springframework.data.domain.Page;
+import com.kawz.tattoo.api.web.PaginaResponse;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -28,27 +28,27 @@ public class SessaoController {
     }
 
     @GetMapping
-    public Page<SessaoResponse> listar(
+    public PaginaResponse<SessaoResponse> listar(
             @RequestParam(required = false) Integer projetoId,
             @RequestParam(required = false) LocalDate dataApos,
             @RequestParam(defaultValue = "0") int pagina,
             @RequestParam(defaultValue = "20") int tamanho) {
         Pageable pageable = Paginacao.de(pagina, tamanho);
         Integer tatuadorId = tatuadorAutenticado.id();
-        if (dataApos != null) return service.listarPorDataApos(dataApos.atStartOfDay(), tatuadorId, pageable);
+        if (dataApos != null) return PaginaResponse.de(service.listarPorDataApos(dataApos.atStartOfDay(), tatuadorId, pageable));
         return projetoId == null
-                ? service.listar(tatuadorId, pageable)
-                : service.listarPorProjeto(projetoId, tatuadorId, pageable);
+                ? PaginaResponse.de(service.listar(tatuadorId, pageable))
+                : PaginaResponse.de(service.listarPorProjeto(projetoId, tatuadorId, pageable));
     }
 
     @GetMapping("/calendario")
-    public Page<SessaoResponse> calendario(@RequestParam LocalDate inicio,
+    public PaginaResponse<SessaoResponse> calendario(@RequestParam LocalDate inicio,
                                            @RequestParam LocalDate fim,
                                            @RequestParam(defaultValue = "0") int pagina,
                                            @RequestParam(defaultValue = "100") int tamanho) {
         if (fim.isBefore(inicio)) throw new BusinessException("fim não pode ser anterior a inicio");
-        return service.listarPorPeriodo(inicio.atStartOfDay(), fim.plusDays(1).atStartOfDay(),
-                tatuadorAutenticado.id(), Paginacao.de(pagina, tamanho));
+        return PaginaResponse.de(service.listarPorPeriodo(inicio.atStartOfDay(), fim.plusDays(1).atStartOfDay(),
+                tatuadorAutenticado.id(), Paginacao.de(pagina, tamanho)));
     }
 
     @GetMapping("/{id}")

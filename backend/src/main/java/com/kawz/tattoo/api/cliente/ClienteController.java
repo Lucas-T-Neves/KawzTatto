@@ -6,7 +6,7 @@ import com.kawz.tattoo.api.web.Paginacao;
 import com.kawz.tattoo.application.security.TatuadorAutenticado;
 import com.kawz.tattoo.domain.cliente.ClienteService;
 import jakarta.validation.Valid;
-import org.springframework.data.domain.Page;
+import com.kawz.tattoo.api.web.PaginaResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,12 +22,12 @@ public class ClienteController {
         this.tatuadorAutenticado = tatuadorAutenticado;
     }
 
-    /** Lista apenas os clientes do tatuador autenticado (contrato: content + totalPages). */
+    /** Lista apenas os clientes do tatuador autenticado. */
     @GetMapping
-    public Page<ClienteResponse> listar(
+    public PaginaResponse<ClienteResponse> listar(
             @RequestParam(defaultValue = "0") int pagina,
             @RequestParam(defaultValue = "20") int tamanho) {
-        return clienteService.listar(tatuadorAutenticado.id(), Paginacao.de(pagina, tamanho));
+        return PaginaResponse.de(clienteService.listar(tatuadorAutenticado.id(), Paginacao.de(pagina, tamanho)));
     }
 
     @GetMapping("/{id}")

@@ -7,13 +7,11 @@ import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
-
 import java.util.Map;
 
-/** Gera o PDF do contrato no APITemplate.io (POST /v2/create-pdf?template_id=...). */
+/** Cliente APITemplate para geração de PDFs. */
 @Component
-public class  ApiTemplateClient {
-
+public class ApiTemplateClient {
     public record PdfGerado(String downloadUrl, String transactionRef) {}
 
     private final RestClient http;
@@ -21,9 +19,9 @@ public class  ApiTemplateClient {
     private final String templateId;
 
     public ApiTemplateClient(
-            @Value("${apitemplate.base-url:https://rest.apitemplate.io}") String baseUrl,
-            @Value("${apitemplate.api-key:}") String apiKey,
-            @Value("${apitemplate.template-contrato-id:}") String templateId) {
+            @Value("${kawz.integracoes.apitemplate.base-url:${apitemplate.base-url:https://rest.apitemplate.io}}") String baseUrl,
+            @Value("${kawz.integracoes.apitemplate.api-key:${apitemplate.api-key:}}") String apiKey,
+            @Value("${kawz.integracoes.apitemplate.template-id:${apitemplate.template-anamnese-id:}}") String templateId) {
         var factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(5_000);
         factory.setReadTimeout(30_000);
@@ -32,8 +30,7 @@ public class  ApiTemplateClient {
         this.templateId = templateId;
     }
 
-    /** @param dados variáveis do template; as chaves precisam bater com os placeholders cadastrados no APITemplate */
-    public PdfGerado gerarContrato(Map<String, Object> dados) {
+    public PdfGerado gerarAnamnese(Map<String, Object> dados) {
         if (apiKey.isBlank() || templateId.isBlank()) {
             throw new IntegracaoException("APITemplate não configurado (defina APITEMPLATE_API_KEY e APITEMPLATE_TEMPLATE_ID)");
         }
@@ -55,4 +52,5 @@ public class  ApiTemplateClient {
         Object ref = resposta.get("transaction_ref");
         return new PdfGerado(String.valueOf(resposta.get("download_url")), ref == null ? null : String.valueOf(ref));
     }
+
 }

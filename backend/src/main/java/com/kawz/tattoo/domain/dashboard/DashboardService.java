@@ -12,6 +12,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 /** Indicadores do tatuador autenticado (nunca do estúdio inteiro). */
 @Service
@@ -55,7 +58,27 @@ public class DashboardService {
                 .count();
         MovimentacaoResumoResponse financeiro = movimentacoes.resumo(mes.toString(), tatuadorId);
         return new DashboardResponse(mes.toString(), projetosAtivos, sessoesHoje, followUpsPendentes,
-                financeiro.receita(), financeiro.despesas(), financeiro.saldo(), financeiro.pendencias());
+                financeiro.receita(), financeiro.despesas(), financeiro.saldo(), financeiro.pendencias(), alertas(hoje, tatuadorId));
+    }
+
+    private List<DashboardResponse.Alerta> alertas(LocalDate hoje, Integer tatuadorId) {
+        LocalDateTime inicio = hoje.minusDays(30).atStartOfDay();
+        var sessoesDoPeriodo = sessoes.findByDataHorarioAfterAndProjeto_Tatuador_IdOrderByDataHorarioAsc(
+                inicio, tatuadorId, org.springframework.data.domain.PageRequest.of(0, 500));
+        List<DashboardResponse.Alerta> result = new ArrayList<>();
+        for (var sessao : sessoesDoPeriodo) {
+            if (sessao.getStatusSessao() == null || !sessao.getStatusSessao().equalsIgnoreCase("CONFIRMADA")) continue;
+            LocalDate data = sessao.getDataHorario().toLocalDate();
+            String cliente = sessao.getProjeto().getCliente().getNome();
+            if (data.equals(hoje.plusDays(7))) {
+                result.add(new DashboardResponse.Alerta("PRE_TATUAGEM", sessao.getId(), sessao.getProjeto().getId(), cliente,
+                        data.toString(), "Confirmar os preparativos da tatuagem em 7 dias."));
+            } else if (!data.isBefore(hoje.minusDays(30)) && !data.isAfter(hoje.minusDays(15))) {
+                result.add(new DashboardResponse.Alerta("POS_TATUAGEM", sessao.getId(), sessao.getProjeto().getId(), cliente,
+                        data.toString(), "Realizar o acompanhamento pós-tatuagem."));
+            }
+        }
+        return result;
     }
 
     private boolean pendente(FollowUp followUp) {

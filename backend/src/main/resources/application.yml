@@ -13,6 +13,7 @@ kawz:
     apitemplate:
       base-url: ${APITEMPLATE_BASE_URL:https://rest.apitemplate.io}
       api-key: ${APITEMPLATE_API_KEY:}
+      # ID do template usado exclusivamente para PDF da anamnese.
       template-id: ${APITEMPLATE_TEMPLATE_ID:}
     cloudinary:
       cloud-name: ${CLOUDINARY_CLOUD_NAME:}

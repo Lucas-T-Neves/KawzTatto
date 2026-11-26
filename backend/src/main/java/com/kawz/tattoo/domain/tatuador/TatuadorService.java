@@ -39,8 +39,6 @@ public class TatuadorService {
 
     @Transactional(readOnly = true)
     public Page<TatuadorResponse> listar(Pageable pageable) {
-        // Page.map transforma cada Tatuador em TatuadorResponse e conserva
-        // os dados de paginação produzidos pelo repository.
         return repository.findAll(pageable).map(TatuadorMapper::toResponse);
     }
 

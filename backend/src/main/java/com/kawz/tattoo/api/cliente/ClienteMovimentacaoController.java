@@ -5,7 +5,7 @@ import com.kawz.tattoo.api.web.Paginacao;
 import com.kawz.tattoo.application.security.TatuadorAutenticado;
 import com.kawz.tattoo.domain.cliente.ClienteService;
 import com.kawz.tattoo.domain.movimentacao.MovimentacaoService;
-import org.springframework.data.domain.Page;
+import com.kawz.tattoo.api.web.PaginaResponse;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -24,13 +24,13 @@ public class ClienteMovimentacaoController {
     }
 
     @GetMapping
-    public Page<MovimentacaoResponse> listar(@PathVariable Integer clienteId,
+    public PaginaResponse<MovimentacaoResponse> listar(@PathVariable Integer clienteId,
                                              @RequestParam(defaultValue = "0") int pagina,
                                              @RequestParam(defaultValue = "20") int tamanho) {
         Integer tatuadorId = tatuadorAutenticado.id();
         // valida a posse do cliente antes de listar (404 se for de outro tatuador)
         clientes.obterDoTatuador(clienteId, tatuadorId);
-        return service.listar(tatuadorId, null, null, null, clienteId,
-                Paginacao.de(pagina, tamanho));
+        return PaginaResponse.de(service.listar(tatuadorId, null, null, null, clienteId,
+                Paginacao.de(pagina, tamanho)));
     }
 }

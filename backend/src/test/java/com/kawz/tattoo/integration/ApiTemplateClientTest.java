@@ -32,7 +32,7 @@ class ApiTemplateClientTest {
     void geraPdfEEnviaChaveTemplateEDados() {
         var client = new ApiTemplateClient(server.url(), "chave-teste", "tpl-1");
 
-        var pdf = client.gerarContrato(Map.of("nome_cliente", "Ana"));
+        var pdf = client.gerarAnamnese(Map.of("nome", "Ana"));
 
         assertThat(pdf.downloadUrl()).isEqualTo("https://pdf.exemplo/c.pdf");
         assertThat(pdf.transactionRef()).isEqualTo("tx-1");
@@ -40,7 +40,7 @@ class ApiTemplateClientTest {
         assertThat(req.method()).isEqualTo("POST");
         assertThat(req.uri()).startsWith("/v2/create-pdf").contains("template_id=tpl-1");
         assertThat(req.headers().get("x-api-key")).isEqualTo("chave-teste");
-        assertThat(req.body()).contains("\"nome_cliente\"").contains("Ana");
+        assertThat(req.body()).contains("\"nome\"").contains("Ana");
     }
 
     @Test
@@ -48,7 +48,7 @@ class ApiTemplateClientTest {
         server.responder(req -> new Resp(500, "{\"status\":\"error\"}"));
         var client = new ApiTemplateClient(server.url(), "chave-teste", "tpl-1");
 
-        assertThatThrownBy(() -> client.gerarContrato(Map.of("a", "b")))
+        assertThatThrownBy(() -> client.gerarAnamnese(Map.of("a", "b")))
                 .isInstanceOf(IntegracaoException.class);
     }
 
@@ -57,7 +57,7 @@ class ApiTemplateClientTest {
         server.responder(req -> new Resp(200, "{\"status\":\"success\"}"));
         var client = new ApiTemplateClient(server.url(), "chave-teste", "tpl-1");
 
-        assertThatThrownBy(() -> client.gerarContrato(Map.of("a", "b")))
+        assertThatThrownBy(() -> client.gerarAnamnese(Map.of("a", "b")))
                 .isInstanceOf(IntegracaoException.class);
     }
 
@@ -66,8 +66,8 @@ class ApiTemplateClientTest {
         var semChave = new ApiTemplateClient(server.url(), "", "tpl-1");
         var semTemplate = new ApiTemplateClient(server.url(), "chave", "");
 
-        assertThatThrownBy(() -> semChave.gerarContrato(Map.of())).isInstanceOf(IntegracaoException.class);
-        assertThatThrownBy(() -> semTemplate.gerarContrato(Map.of())).isInstanceOf(IntegracaoException.class);
+        assertThatThrownBy(() -> semChave.gerarAnamnese(Map.of())).isInstanceOf(IntegracaoException.class);
+        assertThatThrownBy(() -> semTemplate.gerarAnamnese(Map.of())).isInstanceOf(IntegracaoException.class);
         assertThat(server.requests).isEmpty();
     }
 }

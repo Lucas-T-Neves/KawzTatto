@@ -26,7 +26,7 @@ public final class Paginacao {
                 Sort.by(Sort.Direction.ASC, "id"));
     }
 
-    /** Sem ordenação: queries nativas que já têm ORDER BY próprio (vw_contratos). */
+    /** Sem ordenação: queries nativas que já têm ORDER BY próprio. */
     // Esta variação mantém a mesma abstração de paginação, mas deixa a ordenação
     // para a consulta nativa que já define seu próprio ORDER BY.
     public static Pageable semOrdenacao(int pagina, int tamanho) {

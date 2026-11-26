@@ -20,7 +20,15 @@ public interface AgendaGateway {
     /** Cria o evento e devolve o id externo (null quando a integração está desligada). */
     String criarEvento(String titulo, String descricao, String local, LocalDateTime inicio);
 
+    default String criarEvento(String titulo, String descricao, String local, LocalDateTime inicio, Integer duracaoHoras) {
+        return criarEvento(titulo, descricao, local, inicio);
+    }
+
     void atualizarEvento(String eventoId, String titulo, String descricao, String local, LocalDateTime inicio);
+
+    default void atualizarEvento(String eventoId, String titulo, String descricao, String local, LocalDateTime inicio, Integer duracaoHoras) {
+        atualizarEvento(eventoId, titulo, descricao, local, inicio);
+    }
 
     void removerEvento(String eventoId);
 }

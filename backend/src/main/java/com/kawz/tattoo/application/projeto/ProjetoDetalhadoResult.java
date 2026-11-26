@@ -14,7 +14,7 @@ import java.util.List;
  * não por DTOs HTTP: a camada de API converte este resultado em
  * {@code ProjetoDetalhadoResponse} (ver {@code api.projeto.ProjetoDetalhadoMapper}).
  *
- * <p>O projeto vem com contrato e características carregados na mesma consulta,
+ * <p>O projeto vem com as características carregadas na mesma consulta,
  * então a conversão pode acontecer fora da transação.</p>
  */
 public record ProjetoDetalhadoResult(

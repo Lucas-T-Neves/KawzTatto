@@ -71,7 +71,7 @@ class AcessoCruzadoApiTest {
 
     /** Conjunto completo de recursos de um tatuador. */
     record Cenario(Auth auth, int cliente, int projeto, int sessao, int movimentacao,
-                   int followUp, int orcamento, int contrato, int imagem, int atividade) {
+                   int followUp, int orcamento, int imagem, int atividade) {
     }
 
     private Cenario montar() {
@@ -102,8 +102,6 @@ class AcessoCruzadoApiTest {
                 + ",\"sessoesEstimadas\":3}", t);
         assertThat(orcamento.status()).isEqualTo(201);
 
-        var contrato = api.post("/api/v1/contratos", "{\"projetoId\":" + projeto + "}", t);
-        assertThat(contrato.status()).isEqualTo(201);
 
         var imagem = api.post("/api/v1/imagens", "{\"projetoId\":" + projeto
                 + ",\"publicId\":\"kawz/" + projeto + "\",\"url\":\"https://img.exemplo/" + projeto + ".png\"}", t);
@@ -115,7 +113,7 @@ class AcessoCruzadoApiTest {
         assertThat(atividade.status()).isEqualTo(201);
 
         return new Cenario(auth, cliente, projeto, sessao.json("$.id"), movimentacao.json("$.id"),
-                followUp.json("$.id"), orcamento.json("$.id"), contrato.json("$.id"),
+                followUp.json("$.id"), orcamento.json("$.id"),
                 imagem.json("$.id"), atividade.json("$.id"));
     }
 
@@ -154,13 +152,12 @@ class AcessoCruzadoApiTest {
         assertThat(api.get("/api/v1/projetos/" + a.projeto() + "/movimentacoes", tb).status()).isEqualTo(404);
         assertThat(api.get("/api/v1/projetos/" + a.projeto() + "/follow-ups", tb).status()).isEqualTo(404);
         assertThat(api.get("/api/v1/projetos/" + a.projeto() + "/orcamentos", tb).status()).isEqualTo(404);
-        assertThat(api.get("/api/v1/projetos/" + a.projeto() + "/contrato", tb).status()).isEqualTo(404);
         assertThat(api.get("/api/v1/projetos/" + a.projeto() + "/imagens", tb).status()).isEqualTo(404);
         assertThat(api.get("/api/v1/projetos/" + a.projeto() + "/caracteristicas", tb).status()).isEqualTo(404);
         assertThat(api.put("/api/v1/projetos/" + a.projeto() + "/caracteristicas",
                 "{\"localizacaoCorpo\":\"braco\"}", tb).status()).isEqualTo(404);
 
-        // sessão, movimentação, follow-up, orçamento, contrato, imagem, atividade
+        // sessão, movimentação, follow-up, orçamento, imagem, atividade
         assertThat(api.get("/api/v1/sessoes/" + a.sessao(), tb).status()).isEqualTo(404);
         assertThat(api.patch("/api/v1/sessoes/" + a.sessao() + "/remarcar",
                 "{\"dataHorario\":\"2031-04-10T09:00:00\"}", tb).status()).isEqualTo(404);
@@ -174,13 +171,6 @@ class AcessoCruzadoApiTest {
 
         assertThat(api.get("/api/v1/orcamentos/" + a.orcamento(), tb).status()).isEqualTo(404);
         assertThat(api.delete("/api/v1/orcamentos/" + a.orcamento(), tb).status()).isEqualTo(404);
-
-        assertThat(api.get("/api/v1/contratos/" + a.contrato(), tb).status()).isEqualTo(404);
-        assertThat(api.put("/api/v1/contratos/" + a.contrato(), "{\"toleranciaAtraso\":\"10\"}", tb).status())
-                .isEqualTo(404);
-        assertThat(api.post("/api/v1/contratos/" + a.contrato() + "/pdf", "{}", tb).status()).isEqualTo(404);
-        assertThat(api.patch("/api/v1/contratos/" + a.contrato() + "/assinatura", "{}", tb).status())
-                .isEqualTo(404);
 
         assertThat(api.get("/api/v1/imagens/" + a.imagem(), tb).status()).isEqualTo(404);
         assertThat(api.delete("/api/v1/imagens/" + a.imagem(), tb).status()).isEqualTo(404);
@@ -209,8 +199,6 @@ class AcessoCruzadoApiTest {
         assertThat((Integer) api.get("/api/v1/movimentacoes?pagina=0&tamanho=200", tb).json("$.totalElements"))
                 .isEqualTo(1);
         assertThat((Integer) api.get("/api/v1/sessoes?pagina=0&tamanho=200", tb).json("$.totalElements"))
-                .isEqualTo(1);
-        assertThat((Integer) api.get("/api/v1/contratos?pagina=0&tamanho=200", tb).json("$.totalElements"))
                 .isEqualTo(1);
         assertThat((Integer) api.get("/api/v1/follow-ups", tb).json("$.length()")).isEqualTo(1);
         assertThat((Integer) api.get("/api/v1/tatuadores/" + b.auth().tatuadorId() + "/atividades", tb)
@@ -256,9 +244,6 @@ class AcessoCruzadoApiTest {
 
         assertThat(api.post("/api/v1/orcamentos", "{\"projetoId\":" + a.projeto() + ",\"clienteId\":" + a.cliente()
                 + ",\"status\":\"Rascunho\",\"total\":10.00,\"deposito\":0.00,\"sessoesEstimadas\":1}", tb).status())
-                .isEqualTo(404);
-
-        assertThat(api.post("/api/v1/contratos", "{\"projetoId\":" + a.projeto() + "}", tb).status())
                 .isEqualTo(404);
 
         assertThat(api.post("/api/v1/imagens", "{\"projetoId\":" + a.projeto()

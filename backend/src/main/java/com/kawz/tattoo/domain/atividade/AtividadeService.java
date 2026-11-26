@@ -34,8 +34,6 @@ public class AtividadeService {
     @Transactional(readOnly = true)
     public List<AtividadeResponse> listarPorTatuador(Integer tatuadorId, Integer tatuadorAutenticadoId) {
         validarTatuador(tatuadorId, tatuadorAutenticadoId);
-        // stream().map().toList() percorre as atividades e aplica o mapper
-        // explícito para produzir a lista de respostas da API.
         return atividades.findByTatuadorIdOrderByIdDesc(tatuadorId).stream()
                 .map(AtividadeMapper::toResponse)
                 .toList();
@@ -45,8 +43,6 @@ public class AtividadeService {
     public List<AtividadeResponse> listarPorTatuadorEData(Integer tatuadorId, LocalDate data,
                                                           Integer tatuadorAutenticadoId) {
         validarTatuador(tatuadorId, tatuadorAutenticadoId);
-        // A abstração stream().map().toList() evita repetir manualmente
-        // a conversão de cada atividade e devolve uma nova lista de DTOs.
         return atividades.findByTatuadorIdAndDataOrderByInicioAsc(tatuadorId, data).stream()
                 .map(AtividadeMapper::toResponse)
                 .toList();

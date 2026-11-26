@@ -11,11 +11,11 @@ public final class SessaoMapper {
 
     public static SessaoResponse toResponse(Sessao value) {
         return new SessaoResponse(value.getId(), value.getProjeto().getId(), value.getDataHorario(),
-                value.getLocalAtendimento(), value.getStatusSessao(), value.getObservacoesSessao());
+                value.getLocalAtendimento(), value.getStatusSessao(), value.getObservacoesSessao(), value.getDuracaoHoras());
     }
 
     public static Sessao toEntity(SessaoInput value, Projeto projeto) {
         return new Sessao( projeto, value.dataHorario(),
-                value.localAtendimento(), value.statusSessao(), value.observacoesSessao());
+                value.localAtendimento(), value.statusSessao(), value.observacoesSessao(), value.duracaoHoras());
     }
 }

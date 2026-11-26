@@ -23,10 +23,10 @@ public class CloudinaryClient {
     private final String pasta;
 
     public CloudinaryClient(
-            @Value("${cloudinary.cloud-name:}") String cloudName,
-            @Value("${cloudinary.api-key:}") String apiKey,
-            @Value("${cloudinary.api-secret:}") String apiSecret,
-            @Value("${cloudinary.pasta:kawz-tattoo}") String pasta) {
+            @Value("${kawz.integracoes.cloudinary.cloud-name:${cloudinary.cloud-name:}}") String cloudName,
+            @Value("${kawz.integracoes.cloudinary.api-key:${cloudinary.api-key:}}") String apiKey,
+            @Value("${kawz.integracoes.cloudinary.api-secret:${cloudinary.api-secret:}}") String apiSecret,
+            @Value("${kawz.integracoes.cloudinary.pasta:${cloudinary.pasta:kawz-tattoo}}") String pasta) {
         this.configurado = !cloudName.isBlank() && !apiKey.isBlank() && !apiSecret.isBlank();
         this.cloudinary = configurado
                 ? new Cloudinary(ObjectUtils.asMap(
@@ -41,7 +41,7 @@ public class CloudinaryClient {
         if (!configurado) throw new IntegracaoException("Cloudinary não configurado (defina CLOUDINARY_*)");
         try {
             Map<?, ?> r = cloudinary.uploader().upload(conteudo, ObjectUtils.asMap(
-                    "folder", pasta + "/projeto-" + projetoId,
+                    "folder", pasta + "/projetos/" + projetoId,
                     "resource_type", "image"));
             return new Enviada(
                     String.valueOf(r.get("public_id")),
@@ -55,13 +55,39 @@ public class CloudinaryClient {
         }
     }
 
+    public Enviada enviarDocumentoAssinado(byte[] conteudo, Integer anamneseId) {
+        if (!configurado) throw new IntegracaoException("Cloudinary não configurado (defina CLOUDINARY_*)");
+        try {
+            Map<?, ?> r = cloudinary.uploader().upload(conteudo, ObjectUtils.asMap(
+                    "folder", pasta + "/anamneses/" + anamneseId, "resource_type", "raw"));
+            return new Enviada(String.valueOf(r.get("public_id")), String.valueOf(r.get("secure_url")),
+                    r.get("format") == null ? null : String.valueOf(r.get("format")),
+                    r.get("bytes") instanceof Number n ? n.longValue() : null,
+                    r.get("width") instanceof Number n ? n.intValue() : null,
+                    r.get("height") instanceof Number n ? n.intValue() : null);
+        } catch (Exception ex) {
+            throw new IntegracaoException("Falha ao enviar arquivo ao Cloudinary", ex);
+        }
+    }
+
     /** Remoção "melhor esforço": o registro no banco já foi apagado, então só registramos o erro. */
     public void remover(String publicId) {
         if (!configurado || publicId == null) return;
         try {
-            cloudinary.uploader().destroy(publicId, ObjectUtils.asMap("resource_type", "image"));
+            cloudinary.uploader().destroy(publicId, ObjectUtils.asMap(
+                    "resource_type", "image", "invalidate", true));
         } catch (Exception ex) {
             log.warn("Não foi possível remover {} do Cloudinary: {}", publicId, ex.getMessage());
+        }
+    }
+
+    public void removerDocumento(String publicId) {
+        if (!configurado || publicId == null) return;
+        try {
+            cloudinary.uploader().destroy(publicId, ObjectUtils.asMap(
+                    "resource_type", "raw", "invalidate", true));
+        } catch (Exception ex) {
+            log.warn("Não foi possível remover o documento {} do Cloudinary: {}", publicId, ex.getMessage());
         }
     }
 }

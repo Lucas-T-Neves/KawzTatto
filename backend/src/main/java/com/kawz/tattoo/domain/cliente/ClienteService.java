@@ -31,8 +31,6 @@ public class ClienteService {
 
     @Transactional(readOnly = true)
     public Page<ClienteResponse> listar(Integer tatuadorId, Pageable pageable) {
-        // Page.map simplifica percorrer o conteúdo da página, converter cada Cliente
-        // pelo mapper e reconstruir a mesma página preservando total, tamanho e índice.
         return clientes.findByTatuadorId(tatuadorId, pageable).map(ClienteMapper::toResponse);
     }
 

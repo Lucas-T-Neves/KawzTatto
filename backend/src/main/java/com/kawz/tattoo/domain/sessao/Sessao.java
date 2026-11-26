@@ -30,12 +30,15 @@ public class Sessao extends BaseEntity {
     /** Id do evento correspondente no calendário (Nylas); null se a agenda estiver desligada. */
     @Column(name = "evento_calendario_id", length = 100)
     private String eventoCalendarioId;
+    @Column(name = "duracao_horas")
+    private Integer duracaoHoras;
 
     protected Sessao() {}
     public Sessao(Projeto projeto, LocalDateTime dataHorario, String localAtendimento,
-                  String statusSessao, String observacoesSessao) {
+                  String statusSessao, String observacoesSessao, Integer duracaoHoras) {
         this.projeto = projeto;
         atualizar(dataHorario, localAtendimento, statusSessao, observacoesSessao);
+        this.duracaoHoras = duracaoHoras;
     }
 
     public void atualizar(LocalDateTime dataHorario, String localAtendimento,
@@ -52,6 +55,7 @@ public class Sessao extends BaseEntity {
     public void vincularProjeto(Projeto projeto) { this.projeto = projeto; }
 
     public void registrarEventoCalendario(String eventoCalendarioId) { this.eventoCalendarioId = eventoCalendarioId; }
+    public void definirDuracaoHoras(Integer duracaoHoras) { this.duracaoHoras = duracaoHoras; }
 
     public Projeto getProjeto() { return projeto; }
     public String getEventoCalendarioId() { return eventoCalendarioId; }
@@ -59,4 +63,5 @@ public class Sessao extends BaseEntity {
     public String getLocalAtendimento() { return localAtendimento; }
     public String getStatusSessao() { return statusSessao; }
     public String getObservacoesSessao() { return observacoesSessao; }
+    public Integer getDuracaoHoras() { return duracaoHoras; }
 }

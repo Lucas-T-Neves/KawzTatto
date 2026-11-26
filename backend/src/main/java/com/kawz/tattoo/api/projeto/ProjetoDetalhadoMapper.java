@@ -1,7 +1,6 @@
 package com.kawz.tattoo.api.projeto;
 
 import com.kawz.tattoo.api.caracteristicasprojeto.CaracteristicasProjetoMapper;
-import com.kawz.tattoo.api.contrato.ContratoMapper;
 import com.kawz.tattoo.api.followup.FollowUpMapper;
 import com.kawz.tattoo.api.imagem.ImagemMapper;
 import com.kawz.tattoo.api.movimentacao.MovimentacaoMapper;
@@ -25,7 +24,6 @@ public final class ProjetoDetalhadoMapper {
                 resultado.movimentacoes().stream().map(MovimentacaoMapper::toResponse).toList(),
                 resultado.followUps().stream().map(FollowUpMapper::toResponse).toList(),
                 resultado.imagens().stream().map(ImagemMapper::toResponse).toList(),
-                CaracteristicasProjetoMapper.toResponse(projeto.getCaracteristicas(), projeto.getId()),
-                ContratoMapper.toResponse(projeto.getContrato()));
+                CaracteristicasProjetoMapper.toResponse(projeto.getCaracteristicas(), projeto.getId()));
     }
 }

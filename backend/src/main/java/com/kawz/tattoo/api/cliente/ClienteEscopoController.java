@@ -8,7 +8,7 @@ import com.kawz.tattoo.application.security.TatuadorAutenticado;
 import com.kawz.tattoo.domain.cliente.ClienteService;
 import com.kawz.tattoo.domain.projeto.ProjetoService;
 import com.kawz.tattoo.domain.sessao.SessaoService;
-import org.springframework.data.domain.Page;
+import com.kawz.tattoo.api.web.PaginaResponse;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -36,10 +36,10 @@ public class ClienteEscopoController {
     }
 
     @GetMapping("/sessoes")
-    public Page<SessaoResponse> listarSessoes(@PathVariable Integer clienteId,
+    public PaginaResponse<SessaoResponse> listarSessoes(@PathVariable Integer clienteId,
                                               @RequestParam(defaultValue = "0") int pagina,
                                               @RequestParam(defaultValue = "20") int tamanho) {
-        return sessoes.listarPorCliente(clienteId, tatuadorAutenticado.id(), Paginacao.de(pagina, tamanho));
+        return PaginaResponse.de(sessoes.listarPorCliente(clienteId, tatuadorAutenticado.id(), Paginacao.de(pagina, tamanho)));
     }
 
     @GetMapping("/conversa")
