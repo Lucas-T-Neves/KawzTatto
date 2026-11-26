@@ -1,27 +1,27 @@
-/**
- * @typedef {{ id: string, name: string, url: string }} ProjectImage
- * @typedef {{ upload: (file: File) => Promise<ProjectImage> }} ImageRepository
- */
-export class MockImageRepository {
-  /** @param {File} file @returns {Promise<ProjectImage>} */
+import { apiRequest } from "../../../shared/model/http.js"
+
+export class ApiImageRepository {
+  constructor(token, projectId) { this.token = token; this.projectId = projectId }
   async upload(file) {
+    if (!this.projectId) throw new Error("Salve o projeto antes de enviar uma imagem.")
     if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
       throw new Error("Selecione uma imagem JPG, PNG ou WebP.")
     }
-    if (file.size > 1024 * 1024) {
-      throw new Error(
-        "No modo demonstrativo, selecione uma imagem de até 1 MB.",
-      )
+    if (file.size > 10 * 1024 * 1024) {
+      throw new Error("A imagem deve ter no máximo 10 MB.")
     }
-    const url = await new Promise((resolve, reject) => {
-      const reader = new FileReader()
-      reader.onload = () => resolve(String(reader.result))
-      reader.onerror = () => reject(new Error("Não foi possível ler a imagem."))
-      reader.readAsDataURL(file)
+    const body = new FormData()
+    body.append("arquivo", file)
+    const item = await apiRequest(`/api/v1/projetos/${encodeURIComponent(this.projectId)}/imagens`, {
+      token: this.token,
+      method: "POST",
+      body,
     })
-    return { id: crypto.randomUUID(), name: file.name, url }
+    return {
+      id: String(item.id),
+      name: item.nome || file.name,
+      url: item.url,
+      publicId: item.publicId,
+    }
   }
 }
-// Composition boundary: replace only this adapter to connect the future API.
-/** @type {ImageRepository} */
-export const imageRepository = new MockImageRepository()

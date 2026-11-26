@@ -76,7 +76,6 @@
 .timeline-entry { display:flex; flex-direction:column; gap:var(--space-xs); padding:var(--space-lg); border-bottom:1px solid var(--border-primary); font-size:var(--text-sm); }.timeline-entry span { color:var(--text-secondary); font-size:var(--text-xs); }
 .finance-comparison { display:flex; flex-direction:column; gap:var(--space-2xl); }.finance-comparison > div { display:grid; grid-template-columns:1fr 1fr; gap:var(--space-lg); }.finance-comparison progress { grid-column:span 2; width:100%; accent-color:var(--brand-primary); }
 .day-calendar .calendar-day { min-height:calc(var(--space-2xl) * 15); }
-.contract-document { font-family:var(--font-sans); }
 .navigation,
 .floating-glass,
 .feedback {
@@ -105,7 +104,6 @@
   .navigation { top:0; height:auto; margin:0; border-radius:0 0 var(--corner-lg) var(--corner-lg); }
 }
 @media(max-width:640px) { .detail-grid { grid-template-columns:1fr; }.record-button { flex-wrap:wrap; }.calendar { overflow:auto; }.calendar-day { overflow-wrap:anywhere; }.calendar-event { word-break:break-word; }.metric-value { font-size:var(--text-2xl); } }
-@media print {.contract-document,.contract-document * { visibility:visible; }.contract-document { position:absolute; inset:0; padding:var(--space-2xl); color:var(--text-primary); background:var(--surface-bg); } }
 
 .local-access {
   display:grid;
@@ -235,7 +233,6 @@ button:not(:where(.navigation *)):focus-visible { outline:calc(var(--space-xs) /
 .project-image-preview figcaption { display:flex; align-items:center; justify-content:space-between; gap:var(--space-md); margin-top:var(--space-md); font-size:var(--text-xs); }
 .project-image-preview figcaption > span { min-width:0; overflow-wrap:anywhere; }
 .tag-project-status { background:var(--surface-hover); border:solid var(--border-selected); border-width:calc(var(--space-xs) / 4); color:var(--text-primary); font-weight:var(--font-weight-semibold); flex-shrink:0; }
-.workspace.page-projetos.has-context > .lower-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); grid-template-rows:repeat(6,minmax(0,1fr)); grid-template-areas:"general sessions" "general sessions" "general budget" "finance budget" "finance contracts" "finance contracts"; overflow:hidden; align-content:stretch; }
 .budget-record .record-content { display:grid; grid-template-columns:auto minmax(0,1fr) auto; gap:var(--space-md); align-items:center; }
 .budget-record .budget-date, .budget-record .budget-value { white-space:nowrap; font-size:var(--text-sm); }
 .budget-record .budget-name { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--text-sm); }
@@ -243,14 +240,8 @@ button:not(:where(.navigation *)):focus-visible { outline:calc(var(--space-xs) /
 .workspace.page-projetos.has-context .lower-grid > .panel { min-width:0; min-height:0; overflow:hidden; }
 .workspace.page-projetos.has-context .project-information { grid-area:general; }
 .workspace.page-projetos.has-context .project-sessions { grid-area:sessions; }
-.workspace.page-projetos.has-context :is(.project-sessions,.project-budget,.project-finance,.project-contracts) .record-button { padding:var(--space-md) !important; gap:var(--space-md); flex-wrap:nowrap; font-size:var(--text-sm); line-height:var(--leading-tight); }
-.workspace.page-projetos.has-context :is(.project-sessions,.project-finance,.project-contracts) .record-main { flex:1; flex-direction:row; align-items:center; gap:var(--space-md); overflow:hidden; }
-.workspace.page-projetos.has-context :is(.project-sessions,.project-budget,.project-finance,.project-contracts) .record-button strong { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.workspace.page-projetos.has-context :is(.project-sessions,.project-finance,.project-contracts) .record-button small { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.workspace.page-projetos.has-context :is(.project-sessions,.project-finance,.project-contracts) .record-button .tag { flex-shrink:0; padding:var(--space-xs) var(--space-sm); white-space:nowrap; }
 .workspace.page-projetos.has-context .project-budget { grid-area:budget; }
 .workspace.page-projetos.has-context .project-finance { grid-area:finance; }
-.workspace.page-projetos.has-context .project-contracts { grid-area:contracts; }
 .workspace.page-projetos.has-context .section-head { gap:var(--space-md); }
 .workspace.page-projetos.has-context .section-head > [role="heading"] { font-size:var(--text-sm); font-weight:var(--font-weight-semibold); }
 .workspace.page-projetos.has-context .project-information > .section-head,
@@ -277,7 +268,6 @@ button:not(:where(.navigation *)):focus-visible { outline:calc(var(--space-xs) /
 .project-reference img { height:calc(var(--space-2xl) * 4); max-width:100%; object-fit:contain; border-radius:var(--corner-md); }
 .project-reference figcaption { margin-top:var(--space-xs); }
 @media(max-width:640px) {
-  .workspace.page-projetos.has-context > .lower-grid { grid-template-columns:minmax(0,1fr); grid-template-rows:auto; grid-template-areas:"general" "sessions" "budget" "finance" "contracts"; overflow-y:auto; }
   .workspace.page-projetos.has-context .lower-grid > .panel { min-height:calc(var(--space-2xl) * 10); }
   .workspace.page-projetos.has-context .project-information { min-height:calc(var(--space-2xl) * 18); }
   .workspace.page-projetos.has-context .record-list { max-height:calc(var(--space-2xl) * 10); }

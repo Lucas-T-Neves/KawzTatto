@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from "react"
-import { imageRepository } from "../model/ImageRepository.js"
 export default function useProjectImageViewModel(
   onChange,
-  repository = imageRepository,
+  repository,
 ) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState("")

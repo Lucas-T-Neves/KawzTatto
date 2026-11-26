@@ -6,6 +6,7 @@ export const apiBaseUrl = import.meta.env?.DEV
 export const apiMode = Boolean(import.meta.env?.DEV || import.meta.env?.VITE_API_BASE_URL)
 
 export async function apiRequest(path, { method = "GET", body, token, signal } = {}) {
+  const isFormData = typeof FormData !== "undefined" && body instanceof FormData
   let response
   try {
     response = await fetch(`${apiBaseUrl}${path}`, {
@@ -13,10 +14,10 @@ export async function apiRequest(path, { method = "GET", body, token, signal } =
       signal,
       headers: {
         Accept: "application/json, application/problem+json",
-        ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
+        ...(body !== undefined && !isFormData ? { "Content-Type": "application/json" } : {}),
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
-      ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+      ...(body !== undefined ? { body: isFormData ? body : JSON.stringify(body) } : {}),
     })
   } catch (error) {
     if (error.name === "AbortError") throw error

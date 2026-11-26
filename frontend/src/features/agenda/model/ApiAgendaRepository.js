@@ -69,7 +69,8 @@ export const fromApiSession = (item) => {
     type: "SESSAO",
     date,
     start,
-    end: "",
+    end: item.duracaoHoras && start ? `${String((Number(start.slice(0, 2)) + Number(item.duracaoHoras)).padStart(2, "0"))}:${start.slice(3)}` : "",
+    durationHours: item.duracaoHoras || null,
     location: item.localAtendimento || "",
     notes: item.observacoesSessao || "",
     status: item.statusSessao || "",
@@ -107,6 +108,7 @@ export function toApiSession(form) {
     localAtendimento: form.location?.trim() || "Mauá",
     statusSessao: (form.status || "A confirmar").trim(),
     observacoesSessao: form.notes?.trim() || null,
+    ...(form.durationHours ? { duracaoHoras: Number(form.durationHours) } : {}),
   }
 }
 

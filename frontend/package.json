@@ -8,10 +8,12 @@
     "build": "vite build",
     "preview": "vite preview",
     "format": "oxfmt",
+    "test": "node --test $(find src -name '*.test.js' ! -path 'src/ui/controls.test.js' -print)",
     "test:ui": "node --import ./scripts/register-ui-tests.js --test src/ui/controls.test.js"
   },
   "dependencies": {
     "lucide-react": "0.487.0",
+    "nstall": "^0.2.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router-dom": "^7.18.4"

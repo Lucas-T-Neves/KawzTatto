@@ -6,7 +6,9 @@ import useApiAgendaViewModel from "./features/agenda/viewmodel/useApiAgendaViewM
 import useApiBudgetsViewModel from "./features/budgets/viewmodel/useApiBudgetsViewModel.js"
 import useApiFinanceViewModel from "./features/finance/viewmodel/useApiFinanceViewModel.js"
 import useApiFollowUpsViewModel from "./features/followups/viewmodel/useApiFollowUpsViewModel.js"
-import useApiContractsViewModel from "./features/contracts/viewmodel/useApiContractsViewModel.js"
+import useApiAnamnesisViewModel from "./features/anamneses/viewmodel/useApiAnamnesisViewModel.js"
+import useApiDashboardViewModel from "./features/dashboard/viewmodel/useApiDashboardViewModel.js"
+import AnamnesePanel from "./features/anamneses/view/AnamnesePanel.jsx"
 import { cssClass } from "./styles/classes.js"
 import { statusTone } from "./styles/status.js"
 import { useEffect, useState } from "react"
@@ -23,6 +25,7 @@ import {
 import FormStepper from "./ui/FormStepper.jsx"
 import Calendar from "./Calendar.jsx"
 import ProjectImageField from "./features/projects/view/ProjectImageField.jsx"
+import { ApiImageRepository } from "./features/projects/model/ImageRepository.js"
 import ProjectSelectField from "./features/projects/view/ProjectSelectField.jsx"
 import {
   ArrowLeft,
@@ -180,6 +183,7 @@ const fields = {
     ["date", "Data", "date"],
     ["start", "Início", "time"],
     ["end", "Término", "time"],
+    ["duracaoHoras", "Duração (horas)", "number"],
     ["location", "Local", ["Mauá", "Vila Mariana"]],
     [
       "status",
@@ -213,17 +217,6 @@ const fields = {
     ["status", "Status", ["Pago", "Pendente", "Cancelado"]],
     ["notes", "Observações", "textarea"],
   ],
-  Contratos: [
-    ["name", "Identificação do documento"],
-    ["projectId", "Projeto", "Projetos"],
-    ["changes", "Alterações da arte sem custo", "number"],
-    ["delay", "Tolerância de atraso"],
-    ["deadline", "Prazo de desenvolvimento"],
-    ["anamnesis", "Anamnese", "textarea"],
-    ["exclusive", "Exclusividade", "textarea"],
-    ["image", "Uso de imagem", "textarea"],
-    ["notes", "Condições adicionais", "textarea"],
-  ],
 }
 function Panel({ title, action, children, className = "" }) {
   return (
@@ -245,14 +238,13 @@ export function Workspace({ onExit, profile, page }) {
   const apiClientPage = page === "Clientes"
   const apiProjectPage = page === "Projetos"
   const apiClients = useApiClientsViewModel(profile.token, true, apiClientPage ? selected : "")
+  const apiAnamnese = useApiAnamnesisViewModel(profile.token, apiClientPage ? selected : "", apiClientPage && Boolean(selected))
   const apiProjects = useApiProjectsViewModel(profile.token, profile, true, apiProjectPage ? selected : "")
   const apiAgenda = useApiAgendaViewModel(profile, apiMode)
+  const apiDashboard = useApiDashboardViewModel(profile.token, page === "Início" && apiMode)
   const apiBudgets = useApiBudgetsViewModel(profile.token, true, "")
   const apiFinance = useApiFinanceViewModel(profile.token, true)
   const apiFollowUps = useApiFollowUpsViewModel(profile.token, true)
-  const contractProject = apiProjectPage ? selected : ""
-  const contractClient = apiProjectPage ? apiProjects.project?.clientId : ""
-  const apiContracts = useApiContractsViewModel(profile.token, contractProject, contractClient, apiProjectPage)
   const apiCollectionPage = apiClientPage || apiProjectPage
   const activeApiViewModel = apiClientPage
     ? apiClients
@@ -287,7 +279,6 @@ export function Workspace({ onExit, profile, page }) {
     if (key === "Orçamentos") return apiBudgets.budgets
     if (key === "Financeiro") return apiFinance.entries
     if (key === "Acompanhamentos") return apiFollowUps.entries
-    if (key === "Contratos") return apiContracts.entries
     return []
   }
   const find = (key, id) => list(key).find((item) => item.id === id)
@@ -303,7 +294,7 @@ export function Workspace({ onExit, profile, page }) {
       setNotice("Configure VITE_API_BASE_URL para cadastrar na agenda.")
       return
     }
-    if (!["Clientes", "Projetos", "Agenda", "Orçamentos", "Financeiro", "Acompanhamentos", "Contratos"].includes(key)) return
+    if (!["Clientes", "Projetos", "Agenda", "Orçamentos", "Financeiro", "Acompanhamentos"].includes(key)) return
     setEditor(key)
     setError("")
     setFieldErrors({})
@@ -348,7 +339,7 @@ export function Workspace({ onExit, profile, page }) {
   const status = (item) => item.status || ""
   const sessionStatus = status
   const save = async () => {
-    if (!["Clientes", "Projetos", "Agenda", "Orçamentos", "Financeiro", "Acompanhamentos", "Contratos"].includes(editor)) return
+    if (!["Clientes", "Projetos", "Agenda", "Orçamentos", "Financeiro", "Acompanhamentos"].includes(editor)) return
     const validationErrors = validateForm(editor, form)
     setFieldErrors(validationErrors)
     if (Object.keys(validationErrors).length) {
@@ -385,10 +376,6 @@ export function Workspace({ onExit, profile, page }) {
         await apiFollowUps.save(form)
         setEditor("")
         setNotice("Acompanhamento salvo na API.")
-      } else if (editor === "Contratos") {
-        await apiContracts.save(form)
-        setEditor("")
-        setNotice("Contrato salvo na API.")
       }
     } catch (failure) {
       setError(failure.message)
@@ -429,8 +416,7 @@ export function Workspace({ onExit, profile, page }) {
     (editor === "Agenda" && apiAgenda.saving) ||
     (editor === "Orçamentos" && apiBudgets.saving) ||
     (editor === "Financeiro" && apiFinance.saving) ||
-    (editor === "Acompanhamentos" && apiFollowUps.saving) ||
-    (editor === "Contratos" && apiContracts.saving)
+    (editor === "Acompanhamentos" && apiFollowUps.saving)
   const advanceStep = () => {
     if (!activeStep) return
     const errors = validateFormStep(editor, form, activeStep.id)
@@ -992,6 +978,28 @@ export function Workspace({ onExit, profile, page }) {
                 <Panel
                   title="Avisos e acompanhamentos"
                  >
+                    {apiDashboard.state === "error" && <p role="alert">{apiDashboard.error}</p>}
+                    {apiDashboard.state === "loading" && <p role="status">Carregando avisos automáticos…</p>}
+                    {apiDashboard.state === "success" && apiDashboard.alertas.length > 0 && (
+                      <div className={cssClass("record-list")}>
+                        {apiDashboard.alertas.map((alerta) => (
+                          <Button
+                            key={`${alerta.tipo}-${alerta.sessaoId}`}
+                            variant="subtle"
+                            className={cssClass("record-button")}
+                            onClick={() => alerta.projetoId && navigate("Projetos", alerta.projetoId)}
+                          >
+                            <span className={cssClass("record-content")}>
+                              <span className={cssClass("record-main")}>
+                                <strong>{alerta.mensagem}</strong>
+                                <small>{alerta.cliente || "Cliente não informado"} · {dateLabel(alerta.data)}</small>
+                              </span>
+                              <span className={cssClass("tag status-neutral")}>{alerta.tipo === "PRE_TATUAGEM" ? "Pré-tatuagem" : "Pós-tatuagem"}</span>
+                            </span>
+                          </Button>
+                        ))}
+                      </div>
+                    )}
                     {homeAlertsError ? (
                       <p role="alert">{homeAlertsError}</p>
                     ) : homeAlertsLoading ? (
@@ -1015,7 +1023,7 @@ export function Workspace({ onExit, profile, page }) {
                   action={
                     page === "Clientes" ? (
                       <div className={cssClass("action-row detail-tabs")}>
-                        {["Dados", "Preferências"].map((label) => (
+                        {["Dados", "Preferências", "Anamnese"].map((label) => (
                           <Button
                             key={label}
                             size="small"
@@ -1031,13 +1039,9 @@ export function Workspace({ onExit, profile, page }) {
                             "client-icon-button client-edit-button",
                           )}
                           variant="neutral"
-                          aria-label={
-                            tab === "Preferências"
-                              ? "Editar preferências"
-                              : "Editar dados"
-                          }
+                          aria-label={tab === "Preferências" ? "Editar preferências" : "Editar dados"}
                           icon={<Pencil className={cssClass("control-icon")} />}
-                          disabled={!context}
+                          disabled={!context || tab === "Anamnese"}
                           onClick={() => {
                             if (!context) return
                             open("Clientes", context, {}, {
@@ -1184,6 +1188,9 @@ export function Workspace({ onExit, profile, page }) {
                         </div>
                       ))}
                   </dl>
+                  {page === "Clientes" && tab === "Anamnese" && (
+                    <AnamnesePanel cliente={effectiveContext} model={apiAnamnese} />
+                  )}
                   {page === "Clientes" && tab === "Dados" && (
                     <div className={cssClass("action-row")}> 
                       {(() => {
@@ -1394,29 +1401,6 @@ export function Workspace({ onExit, profile, page }) {
                     "Financeiro",
                   )}
                 </Panel>
-                {page === "Projetos" && (
-                  <Panel
-                    className={cssClass("project-contracts")}
-                    title="Contratos"
-                    action={
-                      <IconButton
-                        className={cssClass("client-icon-button")}
-                        variant="neutral"
-                        aria-label="Gerar contrato"
-                        title="Gerar contrato"
-                        icon={<Plus className={cssClass("control-icon")} />}
-                        onClick={() =>
-                          open("Contratos", undefined, {
-                            ...defaults,
-                            name: `Contrato · ${effectiveContext.name}`,
-                          })
-                        }
-                      />
-                    }
-                  >
-                    {rows(related("Contratos", effectiveContext), "Contratos")}
-                  </Panel>
-                )}
               </div>
             </>
            ) : page === "Agenda" ? (
@@ -1643,6 +1627,8 @@ export function Workspace({ onExit, profile, page }) {
                             referenceName: image?.name || "",
                           }))
                         }
+                        repository={new ApiImageRepository(profile.token, form.id)}
+                        canUpload={Boolean(form.id)}
                       />
                       {fieldError && <p className={cssClass("field-error")}>{fieldError}</p>}
                     </div>
@@ -1755,9 +1741,7 @@ export function Workspace({ onExit, profile, page }) {
                       ? apiFinance.error
                       : editor === "Acompanhamentos"
                         ? apiFollowUps.error
-                        : editor === "Contratos"
-                          ? apiContracts.error
-                          : ""
+                        : ""
           return error || editorError
             ? (
                 <p className={cssClass("validation-error")} role="alert">
@@ -1840,40 +1824,13 @@ export function Workspace({ onExit, profile, page }) {
                     Dar baixa
                   </Button>
                 )}
-              {detail.collection === "Contratos" && (
-                <Button onClick={() => window.print()}>
-                  Imprimir / salvar PDF
-                </Button>
-              )}
             </>
           )
         }
       >
         {detail && (
           <div
-            className={cssClass(
-              detail.collection === "Contratos" ? "contract-document" : "",
-            )}
           >
-            {detail.collection === "Contratos" && (
-              <>
-                <p>MINUTA · {detail.id}</p>
-                <p>
-                  Cliente: {find("Clientes", detail.clientId)?.name} · Projeto:{" "}
-                  {find("Projetos", detail.projectId)?.name}
-                </p>
-                <p>
-                  Valor:{" "}
-                  {money(number(find("Projetos", detail.projectId)?.total))} ·
-                  Sinal:{" "}
-                  {money(number(find("Projetos", detail.projectId)?.deposit))}
-                </p>
-                <p>
-                  Documento sem assinatura digital. Revise as condições antes da
-                  formalização.
-                </p>
-              </>
-            )}
             <dl className={cssClass("detail-grid")}>
               {(fields[detail.collection] || [])
                 .filter(([key]) => detail[key] !== undefined && detail[key] !== "")

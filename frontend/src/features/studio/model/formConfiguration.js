@@ -114,19 +114,6 @@ const baseSteps = {
     },
     { id: "resultado", title: "Resultado", fields: ["notes"] },
   ],
-  Contratos: [
-    { id: "vinculo", title: "Vínculo", fields: ["projectId", "name"] },
-    {
-      id: "regras",
-      title: "Regras",
-      fields: ["changes", "delay", "deadline"],
-    },
-    {
-      id: "clausulas",
-      title: "Cláusulas",
-      fields: ["anamnesis", "exclusive", "image", "notes"],
-    },
-  ],
 }
 
 const sectionStepByEditor = {
@@ -249,11 +236,6 @@ const validationByEditor = {
       ...(form.date ? {} : { date: "Informe a data prevista." }),
     }),
   },
-  Contratos: {
-    vinculo: (form) => ({
-      ...(form.projectId ? {} : { projectId: "Selecione o projeto do contrato." }),
-    }),
-  },
 }
 
 export function getFormSteps(editor, form = {}) {
@@ -264,7 +246,7 @@ export function getFormSteps(editor, form = {}) {
           {
             id: "agendamento",
             title: "Agendamento",
-            fields: ["date", "start", "end", "location", "status"],
+            fields: ["date", "start", "end", "duracaoHoras", "location", "status"],
           },
           { id: "observacoes", title: "Observações", fields: ["notes"] },
         ]
